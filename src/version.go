@@ -4,7 +4,7 @@ package main
 
 const (
 	softwareName    = "APRSIGate"
-	softwareVersion = "1.0.2"
+	softwareVersion = "1.0.3"
 	developedBy     = "Developed by JR2TTA Nao feat.Claude"
 )
 
@@ -15,6 +15,14 @@ type ChangeEntry struct {
 }
 
 var changelog = []ChangeEntry{
+	{
+		Version: "1.0.3",
+		Date:    "2026-10-14",
+		Changes: []string{
+			"デジピータ機能を追加 (WIDE1-1・自局コール指定を中継、WIDE2-n の中継は設定で選択)",
+			"パケットモニターに中継 (DIGI) の表示と絞り込みを追加",
+		},
+	},
 	{
 		Version: "1.0.2",
 		Date:    "2026-10-11",

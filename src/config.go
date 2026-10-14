@@ -34,6 +34,9 @@ type Config struct {
 	IStoRFPath     string `json:"isToRfPath"`
 	MaxIStoRFPerMin int   `json:"maxIsToRfPerMin"`
 
+	DigiEnabled bool `json:"digiEnabled"` // デジピータ (WIDE1-1・自局コール宛を中継)
+	DigiWide    bool `json:"digiWide"`    // WIDE2-n も中継する
+
 	BeaconRF       bool   `json:"beaconRf"`
 	BeaconRFMin    int    `json:"beaconRfMin"`
 	BeaconRFPath   string `json:"beaconRfPath"`

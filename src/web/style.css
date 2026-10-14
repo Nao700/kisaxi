@@ -12,6 +12,7 @@
   --is: #3557b7;
   --tx: #b5381c;
   --gate: #8a3fb0;
+  --digi: #b7791f;
   --hover: #eef3fd;
 }
 @media (prefers-color-scheme: dark) {
@@ -26,6 +27,7 @@
     --is: #8aa7ff;
     --tx: #ff8a65;
     --gate: #d39cf0;
+    --digi: #f0b44c;
     --hover: #26304a;
   }
 }
@@ -145,6 +147,7 @@ main { flex: 1; display: flex; min-height: 0; }
 .dir-IS .d { color: var(--is); }
 .dir-TX-RF .d, .dir-TX-IS .d { color: var(--tx); }
 .dir-GATE-IS .d, .dir-GATE-RF .d { color: var(--gate); }
+.dir-DIGI .d { color: var(--digi); }
 
 #msg-list { padding: 8px; display: flex; flex-direction: column; gap: 6px; }
 .msg { max-width: 85%; padding: 5px 9px; border-radius: 8px; border: 1px solid var(--border); }

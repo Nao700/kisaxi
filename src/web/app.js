@@ -703,7 +703,7 @@ function renderStatus() {
   ti.className = 'ind ' + (!tnc ? '' : tnc.connected ? 'ok' : 'bad');
   ti.title = !tnc ? 'TNC: 使用しない' : `${tnc.desc} ${tnc.connected ? '接続中' : '切断 ' + (tnc.error || '')}`;
   const s = status.stats || {};
-  $('#stats').textContent = `RF受信 ${s.rfRx || 0} / IS受信 ${s.isRx || 0} / RF→IS ${s.rfToIs || 0} / IS→RF ${s.isToRf || 0} / 送信 RF ${s.txRf || 0}・IS ${s.txIs || 0}`;
+  $('#stats').textContent = `RF受信 ${s.rfRx || 0} / IS受信 ${s.isRx || 0} / RF→IS ${s.rfToIs || 0} / IS→RF ${s.isToRf || 0} / デジ ${s.digi || 0} / 送信 RF ${s.txRf || 0}・IS ${s.txIs || 0}`;
 }
 
 $('#btn-beacon').addEventListener('click', async () => {

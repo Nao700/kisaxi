@@ -59,6 +59,7 @@
         <label><input type="checkbox" class="pf" value="IS" checked> IS</label>
         <label><input type="checkbox" class="pf" value="TX" checked> 送信</label>
         <label><input type="checkbox" class="pf" value="GATE" checked> ゲート</label>
+        <label><input type="checkbox" class="pf" value="DIGI" checked> デジ</label>
         <input id="pkt-grep" type="search" placeholder="絞り込み">
         <label><input type="checkbox" id="pkt-pause"> 停止</label>
         <button id="pkt-clear" class="small">クリア</button>
@@ -228,6 +229,13 @@
             <label>IS→RF 最大 (件/分) <input name="maxIsToRfPerMin" type="number" min="1"></label>
           </div>
           <label>IS→RF 送信パス <input name="isToRfPath" placeholder="WIDE1-1 (空欄で直接)"></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>デジピータ</legend>
+          <label class="chk"><input type="checkbox" name="digiEnabled"> デジピータとして中継する (WIDE1-1・自局コール指定)</label>
+          <label class="chk"><input type="checkbox" name="digiWide"> WIDE2-n も中継する (広域デジ)</label>
+          <p class="hint">WIDE1-1 の中継 (フィルインデジ) で、モービル機やハンディ機に自局パケットの中継が返り、電測に使えます。WIDE2-n の中継は送信が増えるため、高所設置の局などで地域の運用ルールを確認してから有効にしてください。TNC 接続時のみ動作します。</p>
         </fieldset>
 
         <fieldset>

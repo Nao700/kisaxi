@@ -21,6 +21,7 @@ type Stats struct {
 	IStoRF int `json:"isToRf"`
 	TxRF   int `json:"txRf"`
 	TxIS   int `json:"txIs"`
+	Digi   int `json:"digi"`
 }
 
 type PacketEvent struct {
@@ -227,6 +228,8 @@ func (a *App) handleRF(line string) {
 	a.hmu.Lock()
 	a.rfHeard[strings.ToUpper(p.Src)] = time.Now()
 	a.hmu.Unlock()
+
+	a.digipeat(p, cfg)
 
 	if p.Type == "thirdparty" {
 		if ip, err := ParseTNC2(p.Info[1:]); err == nil {
