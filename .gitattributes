@@ -1,0 +1,7 @@
+# 改行コードはLFのまま保存・取り出しする（build.sh などをLinuxでも動かすため）
+* text=auto eol=lf
+
+# 画像やバイナリは改行変換しない
+*.png binary
+*.ico binary
+*.exe binary

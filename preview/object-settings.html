@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>オブジェクト設定 プレビュー</title>
+<link rel="stylesheet" href="../src/web/vendor/leaflet.css">
+<link rel="stylesheet" href="../src/web/style.css">
+<style>
+  .pv-banner { background: #b7791f; color: #fff; padding: 5px 12px; font-weight: 600; font-size: 12px; }
+  .obj-list { width: 100%; border-collapse: collapse; margin-top: 4px; }
+  .obj-list th { text-align: left; font-size: 11px; color: var(--muted); font-weight: 600; padding: 3px 4px; border-bottom: 1px solid var(--border); }
+  .obj-list td { padding: 4px; border-bottom: 1px solid var(--border); font-size: 12px; white-space: nowrap; }
+  .obj-list tr.sel td { background: var(--hover); }
+  .obj-list tr { cursor: pointer; }
+  .kind { font-size: 10.5px; border: 1px solid var(--border); border-radius: 3px; padding: 0 4px; color: var(--muted); }
+  .count { font-weight: 400; color: var(--muted); font-size: 12px; margin-left: 4px; }
+  .count.full { color: var(--bad); }
+  .coord-box { border: 1px dashed var(--border); border-radius: 6px; padding: 6px 8px 8px; margin-top: 6px; }
+  .coord-box .ttl { font-size: 12px; font-weight: 600; }
+  .coord-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; align-items: center; }
+  .aprs-fmt { font-family: Consolas, monospace; font-size: 12px; margin-top: 6px; color: var(--text); }
+  .aprs-fmt span { color: var(--muted); font-family: inherit; }
+  .quick { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+  .quick button { display: flex; align-items: center; gap: 4px; padding: 2px 6px; font-size: 11px; }
+  .radios { display: flex; gap: 12px; margin-top: 4px; font-size: 13px; flex-wrap: wrap; }
+  .radios label { flex-direction: row !important; align-items: center; gap: 4px !important; color: var(--text) !important; margin: 0 !important; }
+  #paste-msg, .msg-line { font-size: 11px; min-height: 1em; }
+  .ok-t { color: var(--ok); }
+  .err-t { color: var(--bad); }
+  .warn-t { color: var(--warn); }
+  #pkt {
+    width: 100%; resize: vertical; min-height: 54px;
+    font-family: Consolas, "DejaVu Sans Mono", monospace; font-size: 12px;
+    background: var(--bg); color: var(--text);
+  }
+  #pkt.manual { border-color: var(--warn); box-shadow: 0 0 0 1px var(--warn) inset; }
+  .pkt-head { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .pkt-head .t { font-size: 12px; color: var(--muted); }
+  .badge-manual { background: var(--warn); color: #fff; font-size: 10.5px; border-radius: 3px; padding: 0 5px; }
+  .stn-icon.obj .label { background: #fff4d6; border-color: #b7791f; }
+  .stn-icon.editing .label { background: #b7791f; color: #fff; }
+  .leaflet-marker-draggable { cursor: move; }
+  /* 日本語フォントではバックスラッシュが「¥」に見えるため、英数字専用の欄は英字フォントにする */
+  #f-tbl, #f-sym, #f-name, #f-cmt { font-family: Consolas, "DejaVu Sans Mono", monospace !important; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+</style>
+</head>
+<body>
+<div class="pv-banner">プレビュー（未実装）― 操作は試せますが、保存・送信はしません</div>
+<header id="top">
+  <div class="brand">APRS I-Gate <span id="mycall">JR2TTA-10</span></div>
+  <div class="ind ok"><span class="dot"></span><span class="lbl">APRS-IS</span></div>
+  <div class="ind ok"><span class="dot"></span><span class="lbl">TNC</span></div>
+  <div class="spacer"></div>
+</header>
+<main>
+  <div id="map"></div>
+  <aside id="side">
+    <nav class="tabs">
+      <button>局リスト</button><button>パケット</button><button>メッセージ</button>
+      <button class="active">設定</button><button>このソフトについて</button>
+    </nav>
+    <section class="tab active">
+      <form id="cfg-form" class="scroll" onsubmit="return false">
+        <fieldset>
+          <legend>オブジェクト / アイテム<span class="count" id="count"></span></legend>
+          <table class="obj-list">
+            <thead><tr><th>有効</th><th></th><th>名前</th><th>形式</th><th>送信先</th><th>間隔</th></tr></thead>
+            <tbody id="obj-rows"></tbody>
+          </table>
+          <div class="coord-btns">
+            <button type="button" class="small" id="btn-add">＋ 新規登録</button>
+            <span class="hint" id="limit-msg"></span>
+          </div>
+        </fieldset>
+
+        <fieldset id="editor">
+          <legend>編集: <span id="ed-title"></span></legend>
+
+          <label>形式</label>
+          <div class="radios">
+            <label><input type="radio" name="kind" value="object"> オブジェクト</label>
+            <label><input type="radio" name="kind" value="item"> アイテム</label>
+          </div>
+          <p class="hint" id="kind-hint"></p>
+
+          <label><span id="name-label"></span> <input id="f-name" maxlength="9"></label>
+          <div class="msg-line" id="name-msg"></div>
+
+          <div class="coord-box">
+            <div class="ttl">位置</div>
+            <div class="row">
+              <label>緯度 <input id="f-lat" type="number" step="0.00001"></label>
+              <label>経度 <input id="f-lon" type="number" step="0.00001"></label>
+            </div>
+            <div class="coord-btns">
+              <button type="button" class="small" id="btn-pick">地図をクリックして指定</button>
+              <button type="button" class="small" id="btn-here">自局の位置を使う</button>
+              <button type="button" class="small" id="btn-center">地図の中心を使う</button>
+            </div>
+            <label>座標を貼り付け (Google マップ等の「35.12345, 136.12345」形式・度分秒・「北緯◯度◯分」も可)
+              <input id="f-paste" placeholder="例: 35.17083, 136.88167  /  35°10'15&quot;N 136°52'54&quot;E">
+            </label>
+            <div id="paste-msg"></div>
+            <div class="aprs-fmt"><span>APRS 形式:</span> <b id="aprs-pos"></b></div>
+            <p class="hint">地図上のオレンジのマーカーはドラッグして微調整できます。</p>
+          </div>
+
+          <div class="row">
+            <label>シンボルテーブル <input id="f-tbl" maxlength="1" class="w3"></label>
+            <label>シンボル <input id="f-sym" maxlength="1" class="w3"></label>
+            <span id="sym-prev"></span>
+          </div>
+          <div class="quick" id="quick"></div>
+          <label>コメント (英数字・記号のみ、日本語は送信できません) <input id="f-cmt" maxlength="43" placeholder="例: 439.xxMHz -5MHz T88.5"></label>
+          <div class="msg-line" id="cmt-msg"></div>
+
+          <label>送信先</label>
+          <div class="radios">
+            <label><input type="radio" name="via" value="RF"> RF</label>
+            <label><input type="radio" name="via" value="IS"> APRS-IS</label>
+            <label><input type="radio" name="via" value="BOTH"> 両方</label>
+          </div>
+          <div class="row">
+            <label>送信間隔 (分) <input id="f-int" type="number" min="5"></label>
+            <label class="chk"><input type="checkbox" id="f-en"> 有効</label>
+          </div>
+
+          <div class="pkt-head">
+            <span class="t">送信されるパケット (RF) — 直接編集できます</span>
+            <span class="badge-manual" id="manual-badge" hidden>手動編集中</span>
+          </div>
+          <textarea id="pkt" rows="3" spellcheck="false"></textarea>
+          <div class="msg-line" id="pkt-msg"></div>
+          <div class="coord-btns">
+            <button type="button" class="small" id="btn-regen" disabled>上の項目から作り直す</button>
+          </div>
+          <p class="hint" id="pkt-hint"></p>
+
+          <div class="actions">
+            <button type="button" class="primary">保存</button>
+            <button type="button">今すぐ送信</button>
+            <button type="button" id="btn-del">削除</button>
+          </div>
+        </fieldset>
+      </form>
+    </section>
+  </aside>
+</main>
+<div id="toast" hidden></div>
+<script src="../src/web/vendor/leaflet.js"></script>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const MY = { call: 'JR2TTA-10', lat: 35.09419, lon: 136.91729, path: 'WIDE1-1' };
+const MAX_OBJ = 10;
+const SYM_BASE = '../src/web/sym/';
+function esc(v) { return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function toast(m) { const t = $('#toast'); t.textContent = m; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 2500); }
+function symHTML(sym) {
+  let table = sym[0] || '/', code = sym[1] || '/';
+  let idx = code.charCodeAt(0) - 33;
+  if (idx < 0 || idx > 93) { table = '/'; idx = 0; }
+  const pos = i => `-${(i % 16) * 24}px -${Math.floor(i / 16) * 24}px`;
+  const sheet = table === '/' ? 0 : 1;
+  let ov = '';
+  if (table !== '/' && table !== '\\') {
+    const oi = table.charCodeAt(0) - 33;
+    if (oi >= 0 && oi <= 93) ov = `<span class="ov" style="background-image:url(${SYM_BASE}aprs-symbols-24-2.png);background-position:${pos(oi)}"></span>`;
+  }
+  return `<span class="sym" style="background-image:url(${SYM_BASE}aprs-symbols-24-${sheet}.png);background-position:${pos(idx)}">${ov}</span>`;
+}
+
+// サンプルデータ (説明用)
+const objs = [
+  { kind: 'object', name: 'HAMFES', lat: 35.17083, lon: 136.88167, sym: '/;', cmt: 'HAM FESTIVAL 2026 10-17', via: 'BOTH', int: 30, en: true, manual: null },
+  { kind: 'item', name: 'JR2TTA-R', lat: 35.0650, lon: 136.9500, sym: '/r', cmt: '439.xxMHz -5MHz T88.5', via: 'RF', int: 30, en: false, manual: null },
+  { kind: 'item', name: 'SHOP1', lat: 35.1200, lon: 136.9300, sym: '\\h', cmt: 'HAM SHOP OPEN 10-19', via: 'IS', int: 30, en: true, manual: null },
+];
+let cur = 0, picking = false;
+
+const map = L.map('map').setView([MY.lat, MY.lon], 11);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+L.control.scale({ imperial: false }).addTo(map);
+const icon = (sym, label, cls) => L.divIcon({ className: '', html: `<div class="stn-icon ${cls}">${symHTML(sym)}<span class="label">${esc(label)}</span></div>`, iconSize: [24, 24], iconAnchor: [12, 12] });
+L.marker([MY.lat, MY.lon], { icon: icon('I&', MY.call, 'own') }).addTo(map);
+const markers = [];
+
+function drawMarkers() {
+  markers.forEach(m => map.removeLayer(m));
+  markers.length = 0;
+  objs.forEach((o, i) => {
+    const m = L.marker([o.lat, o.lon], { icon: icon(o.sym, o.name || '(名前なし)', i === cur ? 'editing' : 'obj'), draggable: i === cur, zIndexOffset: i === cur ? 1000 : 0 }).addTo(map);
+    if (i === cur) m.on('dragend', () => { const p = m.getLatLng(); setPos(p.lat, p.lng); });
+    else m.on('click', () => select(i));
+    markers.push(m);
+  });
+}
+
+function fmtLat(v) { const h = v < 0 ? 'S' : 'N'; const t = Math.round(Math.abs(v) * 6000); return `${String(Math.floor(t / 6000)).padStart(2, '0')}${String(Math.floor(t % 6000 / 100)).padStart(2, '0')}.${String(t % 100).padStart(2, '0')}${h}`; }
+function fmtLon(v) { const h = v < 0 ? 'W' : 'E'; const t = Math.round(Math.abs(v) * 6000); return `${String(Math.floor(t / 6000)).padStart(3, '0')}${String(Math.floor(t % 6000 / 100)).padStart(2, '0')}.${String(t % 100).padStart(2, '0')}${h}`; }
+function zulu() { const d = new Date(); const p = n => String(n).padStart(2, '0'); return p(d.getUTCDate()) + p(d.getUTCHours()) + p(d.getUTCMinutes()) + 'z'; }
+
+// 英数字・記号 (印字可能な ASCII) のみ。APRS で特別な意味を持つ | ~ も除く
+const ASCII_RE = /^[\x20-\x7b\x7d]*$/;
+function asciiOnly(s) { return s.replace(/[^\x20-\x7b\x7d]/g, ''); }
+
+function nameError(o) {
+  const n = o.name;
+  if (!n) return '名前を入力してください';
+  if (o.kind === 'item') {
+    if (n.length < 3) return 'アイテムの名前は 3〜9 文字です';
+    if (/[!_]/.test(n)) return 'アイテムの名前に「!」「_」は使えません';
+  }
+  return '';
+}
+
+function autoPacket(o) {
+  const pos = `${fmtLat(o.lat)}${o.sym[0]}${fmtLon(o.lon)}${o.sym[1]}${o.cmt}`;
+  const info = o.kind === 'object' ? `;${o.name.padEnd(9, ' ')}*${zulu()}${pos}` : `)${o.name}!${pos}`;
+  return `${MY.call}>APZJIG,${MY.path}:${info}`;
+}
+
+// 手動編集したパケットの検査
+function checkPacket(p, o) {
+  if (!ASCII_RE.test(p)) return ['err', '日本語など英数字以外の文字が含まれています (送信できません)'];
+  const m = p.match(/^([A-Z0-9-]+)>([A-Z0-9-]+(?:,[A-Z0-9-]+\*?)*):(.+)$/);
+  if (!m) return ['err', '「自局コール>宛先,パス:内容」の形式になっていません'];
+  if (m[1] !== MY.call) return ['err', `送信元は自局 (${MY.call}) である必要があります`];
+  const info = m[3];
+  if (o.kind === 'object' && !/^;.{9}[*_]\d{6}[zh/]/.test(info)) return ['warn', 'オブジェクトの形式 (;名前9文字*時刻…) と一致しません。このまま送信はできます'];
+  if (o.kind === 'item' && !/^\).{3,9}[!_]/.test(info)) return ['warn', 'アイテムの形式 ()名前!…) と一致しません。このまま送信はできます'];
+  return ['ok', '✓ 送信できる形式です'];
+}
+
+function renderRows() {
+  $('#obj-rows').innerHTML = objs.map((o, i) => `<tr data-i="${i}" class="${i === cur ? 'sel' : ''}"><td><input type="checkbox" ${o.en ? 'checked' : ''} data-en="${i}"></td><td>${symHTML(o.sym)}</td><td>${esc(o.name)}${o.manual != null ? ' ✎' : ''}</td><td><span class="kind">${o.kind === 'object' ? 'オブジェクト' : 'アイテム'}</span></td><td>${{ RF: 'RF', IS: 'IS', BOTH: 'RF＋IS' }[o.via]}</td><td>${o.int}分</td></tr>`).join('');
+  const full = objs.length >= MAX_OBJ;
+  $('#count').textContent = `(${objs.length} / ${MAX_OBJ})`;
+  $('#count').classList.toggle('full', full);
+  $('#btn-add').disabled = full;
+  $('#limit-msg').textContent = full ? `登録は ${MAX_OBJ} 件までです` : '';
+}
+function renderEditor() {
+  const o = objs[cur];
+  $('#ed-title').textContent = o.name || '(新規)';
+  $('#aprs-pos').textContent = `${fmtLat(o.lat)} / ${fmtLon(o.lon)}`;
+  $('#sym-prev').innerHTML = symHTML(o.sym);
+  $('#name-label').textContent = o.kind === 'object' ? '名前 (1〜9文字)' : '名前 (3〜9文字)';
+  $('#kind-hint').textContent = o.kind === 'object'
+    ? 'オブジェクト: 送信時刻付き。イベントや一時的な地点向け。'
+    : 'アイテム: 時刻なしの固定地点。リピーターや店舗など常設の場所向け。';
+  const ne = nameError(o);
+  $('#name-msg').className = 'msg-line ' + (ne ? 'err-t' : '');
+  $('#name-msg').textContent = ne;
+
+  const manual = o.manual != null;
+  const pkt = $('#pkt');
+  if (document.activeElement !== pkt) pkt.value = manual ? o.manual : autoPacket(o);
+  pkt.classList.toggle('manual', manual);
+  $('#manual-badge').hidden = !manual;
+  $('#btn-regen').disabled = !manual;
+  const [lv, msg] = checkPacket(pkt.value, o);
+  $('#pkt-msg').className = 'msg-line ' + (lv === 'ok' ? 'ok-t' : lv === 'warn' ? 'warn-t' : 'err-t');
+  $('#pkt-msg').textContent = msg;
+  $('#pkt-hint').textContent = manual
+    ? '手動編集中は、上の項目を変更してもパケットは変わりません。' + (o.kind === 'object' ? ' 時刻部分 (DDHHMMz) は送信時に自動で更新します。' : '') + ' APRS-IS へはパス部分を TCPIP* に置き換えて送信します。'
+    : 'パケットを直接書き換えると「手動編集中」になり、その内容のまま送信します。';
+}
+function fill() {
+  const o = objs[cur];
+  $('#f-name').value = o.name; $('#f-lat').value = o.lat.toFixed(5); $('#f-lon').value = o.lon.toFixed(5);
+  $('#f-tbl').value = o.sym[0]; $('#f-sym').value = o.sym[1]; $('#f-cmt').value = o.cmt;
+  $('#f-int').value = o.int; $('#f-en').checked = o.en;
+  document.querySelectorAll('input[name=via]').forEach(r => (r.checked = r.value === o.via));
+  document.querySelectorAll('input[name=kind]').forEach(r => (r.checked = r.value === o.kind));
+  $('#f-paste').value = ''; $('#paste-msg').textContent = ''; $('#cmt-msg').textContent = '';
+  $('#pkt').blur();
+  renderAll();
+}
+function renderAll() { renderRows(); renderEditor(); drawMarkers(); }
+function select(i) { cur = i; fill(); map.panTo([objs[i].lat, objs[i].lon]); }
+function setPos(lat, lon) {
+  const o = objs[cur]; o.lat = lat; o.lon = lon;
+  $('#f-lat').value = lat.toFixed(5); $('#f-lon').value = lon.toFixed(5);
+  renderAll();
+}
+function setPick(on) { picking = on; $('#btn-pick').classList.toggle('active', on); map.getContainer().classList.toggle('picking', on); if (on) toast('地図上の位置をクリックしてください'); }
+
+// 貼り付けた座標の解釈
+function parseCoord(text) {
+  const t = text.trim().replace(/[，、]/g, ',');
+  let m = t.match(/^(-?\d+(?:\.\d+)?)\s*[, ]\s*(-?\d+(?:\.\d+)?)$/);
+  if (m) return [parseFloat(m[1]), parseFloat(m[2])];
+  const parts = [...t.matchAll(/(\d+(?:\.\d+)?)\s*[°度]\s*(?:(\d+(?:\.\d+)?)\s*['′分])?\s*(?:(\d+(?:\.\d+)?)\s*["″秒])?\s*([NSEW])/gi)];
+  if (parts.length === 2) {
+    const v = parts.map(p => { let d = +p[1] + (+p[2] || 0) / 60 + (+p[3] || 0) / 3600; if (/[SW]/i.test(p[4])) d = -d; return d; });
+    return /[EW]/i.test(parts[0][4]) ? [v[1], v[0]] : v;
+  }
+  const jp = [...t.matchAll(/(北緯|南緯|東経|西経)\s*(\d+(?:\.\d+)?)\s*度\s*(?:(\d+(?:\.\d+)?)\s*分)?\s*(?:(\d+(?:\.\d+)?)\s*秒)?/g)];
+  if (jp.length === 2) {
+    let lat, lon;
+    for (const p of jp) {
+      let d = +p[2] + (+p[3] || 0) / 60 + (+p[4] || 0) / 3600;
+      if (p[1] === '南緯' || p[1] === '西経') d = -d;
+      if (p[1].endsWith('緯')) lat = d; else lon = d;
+    }
+    if (lat != null && lon != null) return [lat, lon];
+  }
+  return null;
+}
+
+map.on('click', e => { if (!picking) return; setPos(e.latlng.lat, e.latlng.lng); setPick(false); });
+$('#btn-pick').onclick = () => setPick(!picking);
+$('#btn-here').onclick = () => setPos(MY.lat, MY.lon);
+$('#btn-center').onclick = () => { const c = map.getCenter(); setPos(c.lat, c.lng); };
+$('#f-lat').oninput = $('#f-lon').oninput = () => {
+  const la = parseFloat($('#f-lat').value), lo = parseFloat($('#f-lon').value);
+  if (isFinite(la) && isFinite(lo) && Math.abs(la) <= 90 && Math.abs(lo) <= 180) { objs[cur].lat = la; objs[cur].lon = lo; renderAll(); }
+};
+$('#f-paste').oninput = () => {
+  const v = $('#f-paste').value, msg = $('#paste-msg');
+  if (!v.trim()) { msg.textContent = ''; return; }
+  const r = parseCoord(v);
+  if (r && Math.abs(r[0]) <= 90 && Math.abs(r[1]) <= 180) {
+    setPos(r[0], r[1]); map.panTo(r); msg.className = 'ok-t'; msg.textContent = `✓ ${r[0].toFixed(5)}, ${r[1].toFixed(5)} に設定しました`;
+  } else { msg.className = 'err-t'; msg.textContent = '座標として読み取れません'; }
+};
+$('#f-name').oninput = e => { objs[cur].name = e.target.value.toUpperCase().replace(/[^A-Z0-9\- ]/g, ''); e.target.value = objs[cur].name; renderAll(); };
+$('#f-tbl').oninput = $('#f-sym').oninput = () => { objs[cur].sym = ($('#f-tbl').value || '/') + ($('#f-sym').value || '/'); renderAll(); };
+$('#f-cmt').oninput = e => {
+  const clean = asciiOnly(e.target.value);
+  $('#cmt-msg').className = 'msg-line warn-t';
+  $('#cmt-msg').textContent = clean !== e.target.value ? '英数字・記号以外の文字 (日本語など) は入力できません' : '';
+  e.target.value = clean; objs[cur].cmt = clean; renderEditor();
+};
+$('#f-int').oninput = e => { objs[cur].int = +e.target.value || 30; renderRows(); };
+$('#f-en').onchange = e => { objs[cur].en = e.target.checked; renderRows(); };
+document.querySelectorAll('input[name=via]').forEach(r => (r.onchange = () => { objs[cur].via = r.value; renderRows(); }));
+document.querySelectorAll('input[name=kind]').forEach(r => (r.onchange = () => { objs[cur].kind = r.value; renderAll(); }));
+$('#pkt').oninput = e => { objs[cur].manual = e.target.value; renderRows(); renderEditor(); };
+$('#btn-regen').onclick = () => { objs[cur].manual = null; $('#pkt').blur(); renderAll(); toast('上の項目からパケットを作り直しました'); };
+$('#obj-rows').onclick = e => {
+  if (e.target.dataset.en != null) { objs[+e.target.dataset.en].en = e.target.checked; if (+e.target.dataset.en === cur) $('#f-en').checked = e.target.checked; return; }
+  const tr = e.target.closest('tr'); if (tr) select(+tr.dataset.i);
+};
+$('#btn-add').onclick = () => {
+  if (objs.length >= MAX_OBJ) return;
+  const c = map.getCenter();
+  objs.push({ kind: 'object', name: '', lat: c.lat, lon: c.lng, sym: '/;', cmt: '', via: 'RF', int: 30, en: true, manual: null });
+  select(objs.length - 1); $('#f-name').focus();
+};
+$('#btn-del').onclick = () => {
+  if (objs.length <= 1) return toast('プレビューでは最後の1件は削除できません');
+  const o = objs[cur];
+  objs.splice(cur, 1); select(0);
+  toast(o.kind === 'object' ? '削除通知 (killed オブジェクト) を数回送信して一覧から消します' : '削除通知 (killed アイテム) を数回送信して一覧から消します');
+};
+
+const QUICK = [['/r', 'リピーター'], ['/;', '移動運用・イベント'], ['\\h', 'ショップ']];
+$('#quick').innerHTML = QUICK.map(([s, n]) => `<button type="button" data-s="${esc(s)}">${symHTML(s)}${n}</button>`).join('');
+$('#quick').onclick = e => { const b = e.target.closest('button'); if (!b) return; objs[cur].sym = b.dataset.s; $('#f-tbl').value = b.dataset.s[0]; $('#f-sym').value = b.dataset.s[1]; renderAll(); };
+
+fill();
+</script>
+</body>
+</html>

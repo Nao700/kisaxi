@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APRS I-Gate</title>
+<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header id="top">
+  <div class="brand">APRS I-Gate <span id="mycall"></span></div>
+  <div class="ind" id="ind-is" title="APRS-IS"><span class="dot"></span><span class="lbl">APRS-IS</span></div>
+  <div class="ind" id="ind-tnc" title="TNC"><span class="dot"></span><span class="lbl">TNC</span></div>
+  <div id="stats"></div>
+  <div class="spacer"></div>
+  <button id="btn-center" title="自局を中心に表示">自局</button>
+  <button id="btn-beacon">ビーコン送信</button>
+</header>
+
+<div id="offline" hidden>アプリ本体 (aprsigate) と接続できません。終了している場合は再起動してください。再接続を待っています…</div>
+<main>
+  <div id="map"></div>
+  <aside id="side">
+    <nav class="tabs">
+      <button data-tab="stations" class="active">局リスト</button>
+      <button data-tab="packets">パケット</button>
+      <button data-tab="messages">メッセージ<span id="msg-badge" class="badge" hidden></span></button>
+      <button data-tab="settings">設定</button>
+      <button data-tab="about">このソフトについて</button>
+    </nav>
+
+    <section id="tab-stations" class="tab active">
+      <div class="toolbar">
+        <input id="st-filter" type="search" placeholder="コールサイン検索">
+        <select id="st-via">
+          <option value="">全て</option>
+          <option value="RF">RF受信のみ</option>
+          <option value="IS">ISのみ</option>
+        </select>
+      </div>
+      <div class="toolbar small">
+        <label><input type="checkbox" id="opt-labels" checked> ラベル</label>
+        <label><input type="checkbox" id="opt-tracks" checked> 軌跡</label>
+        <label><input type="checkbox" id="opt-mapfilter"> 地図にも適用</label>
+        <span id="st-count"></span>
+      </div>
+      <div class="scroll">
+        <table id="st-table">
+          <thead><tr><th></th><th>局</th><th>経由</th><th>距離</th><th>受信</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="tab-packets" class="tab">
+      <div class="toolbar small">
+        <label><input type="checkbox" class="pf" value="RF" checked> RF</label>
+        <label><input type="checkbox" class="pf" value="IS" checked> IS</label>
+        <label><input type="checkbox" class="pf" value="TX" checked> 送信</label>
+        <label><input type="checkbox" class="pf" value="GATE" checked> ゲート</label>
+        <input id="pkt-grep" type="search" placeholder="絞り込み">
+        <label><input type="checkbox" id="pkt-pause"> 停止</label>
+        <button id="pkt-clear" class="small">クリア</button>
+      </div>
+      <div id="pkt-log" class="scroll mono"></div>
+    </section>
+
+    <section id="tab-messages" class="tab">
+      <div id="msg-list" class="scroll"></div>
+      <form id="msg-form">
+        <input id="msg-to" placeholder="宛先" maxlength="9" required autocomplete="off">
+        <input id="msg-text" placeholder="本文 (67文字まで)" maxlength="67" required autocomplete="off">
+        <button type="submit">送信</button>
+      </form>
+    </section>
+
+    <section id="tab-settings" class="tab">
+     <div class="scroll settings">
+      <div id="obj-block">
+        <fieldset>
+          <legend>オブジェクト / アイテム<span class="count" id="obj-count"></span></legend>
+          <table class="obj-list">
+            <thead><tr><th>有効</th><th></th><th>名前</th><th>形式</th><th>送信先</th><th>間隔</th></tr></thead>
+            <tbody id="obj-rows"></tbody>
+          </table>
+          <p class="hint" id="obj-empty">登録されたオブジェクトはありません。</p>
+          <div class="coord-btns">
+            <button type="button" class="small" id="obj-add">＋ 新規登録</button>
+            <span class="hint" id="obj-limit"></span>
+          </div>
+        </fieldset>
+
+        <fieldset id="obj-editor" hidden>
+          <legend>編集: <span id="obj-title"></span></legend>
+          <label>形式</label>
+          <div class="radios">
+            <label><input type="radio" name="obj-kind" value="object"> オブジェクト</label>
+            <label><input type="radio" name="obj-kind" value="item"> アイテム</label>
+          </div>
+          <p class="hint" id="obj-kind-hint"></p>
+
+          <label><span id="obj-name-label"></span> <input id="obj-name" class="ascii" maxlength="9" autocomplete="off"></label>
+          <div class="msg-line" id="obj-name-msg"></div>
+
+          <div class="coord-box">
+            <div class="ttl">位置</div>
+            <div class="row">
+              <label>緯度 <input id="obj-lat" type="number" step="0.00001"></label>
+              <label>経度 <input id="obj-lon" type="number" step="0.00001"></label>
+            </div>
+            <div class="coord-btns">
+              <button type="button" class="small" id="obj-pick">地図をクリックして指定</button>
+              <button type="button" class="small" id="obj-here">自局の位置を使う</button>
+              <button type="button" class="small" id="obj-center">地図の中心を使う</button>
+            </div>
+            <label>座標を貼り付け (Google マップ等の「35.12345, 136.12345」形式・度分秒・「北緯◯度◯分」も可)
+              <input id="obj-paste" placeholder="例: 35.17083, 136.88167  /  35°10'15&quot;N 136°52'54&quot;E" autocomplete="off">
+            </label>
+            <div class="msg-line" id="obj-paste-msg"></div>
+            <div class="aprs-fmt"><span>APRS 形式:</span> <b id="obj-aprs-pos"></b></div>
+            <p class="hint">設定タブを開いている間、地図上のオレンジのマーカーはドラッグして微調整できます。</p>
+          </div>
+
+          <div class="row">
+            <label>シンボルテーブル <input id="obj-tbl" maxlength="1" class="w3 ascii"></label>
+            <label>シンボル <input id="obj-sym" maxlength="1" class="w3 ascii"></label>
+            <span id="obj-sym-prev"></span>
+          </div>
+          <div class="quick" id="obj-quick"></div>
+          <label>コメント (英数字・記号のみ、日本語は送信できません) <input id="obj-cmt" class="ascii" maxlength="43" placeholder="例: 439.xxMHz -5MHz T88.5" autocomplete="off"></label>
+          <div class="msg-line" id="obj-cmt-msg"></div>
+
+          <label>送信先</label>
+          <div class="radios">
+            <label><input type="radio" name="obj-via" value="RF"> RF</label>
+            <label><input type="radio" name="obj-via" value="IS"> APRS-IS</label>
+            <label><input type="radio" name="obj-via" value="BOTH"> 両方</label>
+          </div>
+          <div class="row">
+            <label>送信間隔 (分) <input id="obj-int" type="number" min="5"></label>
+            <label class="chk"><input type="checkbox" id="obj-en"> 有効</label>
+          </div>
+
+          <div class="pkt-head">
+            <span class="t">送信されるパケット (RF) — 直接編集できます</span>
+            <span class="badge-manual" id="obj-manual-badge" hidden>手動編集中</span>
+          </div>
+          <textarea id="obj-pkt" rows="3" spellcheck="false"></textarea>
+          <div class="msg-line" id="obj-pkt-msg"></div>
+          <div class="coord-btns">
+            <button type="button" class="small" id="obj-regen" disabled>上の項目から作り直す</button>
+          </div>
+          <p class="hint" id="obj-pkt-hint"></p>
+
+          <div class="actions">
+            <button type="button" class="primary" id="obj-save">保存</button>
+            <button type="button" id="obj-send">今すぐ送信</button>
+            <button type="button" id="obj-del">削除</button>
+            <span id="obj-dirty" class="warn-t" hidden>未保存の変更があります</span>
+          </div>
+        </fieldset>
+      </div>
+
+      <form id="cfg-form">
+        <fieldset>
+          <legend>自局</legend>
+          <label>コールサイン-SSID <input name="callsign" placeholder="JA1XXX-10" maxlength="9"></label>
+          <label>APRS-IS パスコード <input name="passcode" placeholder="-1 で受信のみ"></label>
+          <div class="row">
+            <label>緯度 <input name="lat" type="number" step="0.00001"></label>
+            <label>経度 <input name="lon" type="number" step="0.00001"></label>
+          </div>
+          <button type="button" id="btn-pickpos" class="small">地図をクリックして位置を設定</button>
+          <div class="row">
+            <label>シンボルテーブル <input name="symbolTable" maxlength="1" class="w3"></label>
+            <label>シンボル <input name="symbol" maxlength="1" class="w3"></label>
+            <span id="sym-preview"></span>
+          </div>
+          <p class="hint">I-Gate の一般的な設定は テーブル「I」(オーバーレイ)＋シンボル「&amp;」です。</p>
+          <label>コメント <input name="comment" maxlength="43"></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>APRS-IS</legend>
+          <label class="chk"><input type="checkbox" name="isEnabled"> APRS-IS に接続する</label>
+          <label>サーバー <input name="isServer" placeholder="rotate.aprs2.net:14580"></label>
+          <label>フィルター <input name="isFilter" placeholder="m/50"></label>
+          <p class="hint">例: m/50 (自局から半径50km)、r/35.68/139.76/100、b/JA1XXX* など</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>TNC (RF)</legend>
+          <label>接続方式
+            <select name="tncType">
+              <option value="none">使用しない</option>
+              <option value="kiss-serial">KISS シリアル (COM ポート)</option>
+              <option value="kiss-tcp">KISS TCP (Direwolf / Soundmodem 等)</option>
+            </select>
+          </label>
+          <div class="tnc-serial">
+            <div class="row">
+              <label>ポート
+                <input name="serialPort" list="ports" placeholder="COM3 / /dev/ttyUSB0">
+                <datalist id="ports"></datalist>
+              </label>
+              <label>速度
+                <select name="baud">
+                  <option>1200</option><option>2400</option><option>4800</option><option>9600</option>
+                  <option>19200</option><option>38400</option><option>57600</option><option>115200</option>
+                </select>
+              </label>
+            </div>
+            <label>KISS 移行コマンド (1行1コマンド・任意)
+              <textarea name="tncInit" rows="2" placeholder="例: KISS ON&#10;RESTART"></textarea>
+            </label>
+          </div>
+          <label class="tnc-tcp">アドレス:ポート <input name="kissTcpAddr" placeholder="127.0.0.1:8001"></label>
+          <label>TXDELAY (ms, 0=TNC の設定のまま) <input name="txDelayMs" type="number" min="0" max="2550" step="10"></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>ゲート</legend>
+          <label class="chk"><input type="checkbox" name="rfToIs"> RF → APRS-IS ゲート</label>
+          <label class="chk"><input type="checkbox" name="isToRf"> APRS-IS → RF ゲート (ローカル局宛メッセージ)</label>
+          <div class="row">
+            <label>ローカル局とみなす時間 (分) <input name="localHeardMin" type="number" min="1"></label>
+            <label>IS→RF 最大 (件/分) <input name="maxIsToRfPerMin" type="number" min="1"></label>
+          </div>
+          <label>IS→RF 送信パス <input name="isToRfPath" placeholder="WIDE1-1 (空欄で直接)"></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>ビーコン</legend>
+          <div class="row">
+            <label class="chk"><input type="checkbox" name="beaconRf"> RF ビーコン</label>
+            <label>間隔 (分) <input name="beaconRfMin" type="number" min="5"></label>
+          </div>
+          <label>RF 送信パス <input name="beaconRfPath" placeholder="WIDE1-1"></label>
+          <div class="row">
+            <label class="chk"><input type="checkbox" name="beaconIs"> APRS-IS ビーコン</label>
+            <label>間隔 (分) <input name="beaconIsMin" type="number" min="5"></label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>その他</legend>
+          <div class="row">
+            <label>受信データの保持時間 (分) <input name="stationExpireMin" type="number" min="1"></label>
+            <label>軌跡の最大点数 <input name="trackPoints" type="number" min="1"></label>
+          </div>
+          <p class="hint">RF・APRS-IS で受信した局とパケットをこの時間保持します。アプリを再起動しても引き継がれます (既定 60 分)。</p>
+          <label class="chk"><input type="checkbox" name="logPackets"> パケットをログファイル (logs フォルダ) に保存</label>
+          <label>Web UI 待ち受け (再起動後に有効) <input name="httpListen" placeholder="127.0.0.1:8073"></label>
+          <label class="chk"><input type="checkbox" name="openBrowser"> 起動時にブラウザを開く</label>
+        </fieldset>
+
+        <div class="actions">
+          <button type="submit" class="primary">保存して適用</button>
+          <span id="cfg-result"></span>
+        </div>
+      </form>
+     </div>
+    </section>
+    <section id="tab-about" class="tab">
+      <div class="scroll about">
+        <h2>APRS I-Gate</h2>
+        <p class="ver">バージョン <span id="about-version"></span></p>
+        <p class="credit" id="about-credit"></p>
+        <h3>変更履歴</h3>
+        <div id="about-changelog"></div>
+        <h3>使用しているもの</h3>
+        <ul class="credits">
+          <li>地図: &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors</li>
+          <li>地図ライブラリ: <a href="https://leafletjs.com/" target="_blank" rel="noopener">Leaflet</a> 1.9.4</li>
+          <li>APRS シンボル: <a href="https://github.com/hessu/aprs-symbols" target="_blank" rel="noopener">hessu/aprs-symbols</a></li>
+        </ul>
+      </div>
+    </section>
+  </aside>
+</main>
+<div id="toast" hidden></div>
+<script src="vendor/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

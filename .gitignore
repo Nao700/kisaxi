@@ -1,0 +1,20 @@
+# --- 個人設定（コールサイン・APRS-ISパスコード・位置情報） ---
+aprsigate.json
+kisaxi.json
+*.local.json
+
+# --- ビルド成果物・実行時データ ---
+dist/
+*.exe
+logs/
+*.log
+*-data.json
+
+# --- 同梱のGoツールチェーン ---
+tools/
+
+# --- エディタ・OS ---
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
