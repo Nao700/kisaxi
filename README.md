@@ -1,7 +1,7 @@
-# APRS I-Gate
+# KISAXIとは
 
-UI-View32 を参考にした APRS I-Gate ソフトです。地図には OpenStreetMap を使います。
-Windows 10/11（互換モード不要）と Linux（x64 / Raspberry Pi）で動作し、ランタイムのインストールは不要な単体実行ファイルです。
+APRS I-Gate ソフトウェアです。地図には OpenStreetMap を使います。
+対応OSはWindows 10/11（互換モード不要）と Linux（x64 / Raspberry Pi）で動作し、ランタイムのインストールは不要な単体実行ファイルです。
 
 ## 機能
 
