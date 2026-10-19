@@ -40,11 +40,14 @@ chmod +x aprsigate-linux-x64
 ./aprsigate-linux-x64
 ```
 
-- Raspberry Pi (64bit OS) なら `aprsigate-linux-arm64`、32bit OS なら `aprsigate-linux-armv7` を使います
+- Raspberry Pi では、機種と OS に合わせて次のファイルを使います（`uname -m` が `aarch64` なら 64bit OS です）
+  - Pi 3 / 4 / 5、Zero 2 W の 64bit OS: `aprsigate-linux-arm64`
+  - Pi 3 / 4、Zero 2 W の 32bit OS: `aprsigate-linux-armv7`
+  - Pi Zero / Zero W: `aprsigate-linux-armv6`（armv7 版は動きません）
 - シリアル TNC を使う場合は、実行ユーザーを `dialout` グループに追加してください: `sudo usermod -aG dialout $USER`
 - 別の PC から管理画面を開くときは `-listen 0.0.0.0:8073` を付けて起動します（認証機能はないので、信頼できる LAN 内だけで使ってください）
 
-systemd で常駐させる例 (`/etc/systemd/system/aprsigate.service`):
+systemd で常駐させる例 (`/etc/systemd/system/aprsigate.service`、「ユーザー名」は実行するユーザーに置き換え。いまの Raspberry Pi OS には `pi` ユーザーがありません):
 
 ```ini
 [Unit]
@@ -52,9 +55,9 @@ Description=APRS I-Gate
 After=network-online.target
 
 [Service]
-User=pi
-WorkingDirectory=/home/pi/aprsigate
-ExecStart=/home/pi/aprsigate/aprsigate-linux-arm64 -nobrowser
+User=ユーザー名
+WorkingDirectory=/home/ユーザー名/aprsigate
+ExecStart=/home/ユーザー名/aprsigate/aprsigate-linux-arm64 -nobrowser
 Restart=always
 
 [Install]
