@@ -403,7 +403,7 @@ function objNameError(o) {
 function objAutoPacket(o) {
   const pos = `${fmtLat(o.lat)}${o.sym[0]}${fmtLon(o.lon)}${o.sym[1]}${o.comment}`;
   const info = o.kind === 'object' ? `;${o.name.padEnd(9, ' ')}*${zulu()}${pos}` : `)${o.name}!${pos}`;
-  return `${cfg.callsign || 'NOCALL'}>APZJIG${cfg.beaconRfPath ? ',' + cfg.beaconRfPath : ''}:${info}`;
+  return `${cfg.callsign || 'NOCALL'}>APKSXI${cfg.beaconRfPath ? ',' + cfg.beaconRfPath : ''}:${info}`;
 }
 function objCheckPacket(p, o) {
   if (!ASCII_RE.test(p)) return ['err', '日本語など英数字以外の文字が含まれています (送信できません)'];

@@ -4,7 +4,7 @@ package main
 
 const (
 	softwareName    = "APRSIGate"
-	softwareVersion = "1.0.3"
+	softwareVersion = "1.0.4"
 	developedBy     = "Developed by JR2TTA Nao feat.Claude"
 )
 
@@ -15,6 +15,13 @@ type ChangeEntry struct {
 }
 
 var changelog = []ChangeEntry{
+	{
+		Version: "1.0.4",
+		Date:    "2026-10-20",
+		Changes: []string{
+			"送信パケットの宛先 (TOCALL) を aprs-deviceid 登録済みの APKSXI に変更 (aprs.fi などで機種名が表示される)",
+		},
+	},
 	{
 		Version: "1.0.3",
 		Date:    "2026-10-14",

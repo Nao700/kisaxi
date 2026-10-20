@@ -219,7 +219,7 @@ function nameError(o) {
 function autoPacket(o) {
   const pos = `${fmtLat(o.lat)}${o.sym[0]}${fmtLon(o.lon)}${o.sym[1]}${o.cmt}`;
   const info = o.kind === 'object' ? `;${o.name.padEnd(9, ' ')}*${zulu()}${pos}` : `)${o.name}!${pos}`;
-  return `${MY.call}>APZJIG,${MY.path}:${info}`;
+  return `${MY.call}>APKSXI,${MY.path}:${info}`;
 }
 
 // 手動編集したパケットの検査

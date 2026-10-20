@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const toCall = "APZJIG" // 実験用 TOCALL (APZxxx)
+const toCall = "APKSXI" // aprs-deviceid 登録済み TOCALL (KISAXI)
 
 type Stats struct {
 	RFRx   int `json:"rfRx"`
