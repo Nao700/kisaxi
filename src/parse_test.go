@@ -146,3 +146,14 @@ func TestAmbigStationJSON(t *testing.T) {
 		t.Errorf("json: %s", b)
 	}
 }
+
+func TestMicEAmbiguityReal(t *testing.T) {
+	// 実機の例: 宛先 S5PUZL = 35°05.  (末尾2桁が空白 → レベル2 = 1分四方)
+	p, _ := ParseTNC2("JR2TTA-7>S5PUZL,WIDE1-1,WIDE2-1:`c.l+%R/>Hello")
+	if p == nil || !p.HasPos || p.Ambig != 2 {
+		t.Fatalf("real mic-e: %+v", p)
+	}
+	if math.Abs(p.Lat-(35+5.5/60)) > 0.0001 {
+		t.Errorf("lat center: %v", p.Lat)
+	}
+}
