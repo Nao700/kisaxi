@@ -1,8 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"math"
+	"strings"
 	"testing"
+	"time"
 )
 
 func near(a, b float64) bool { return math.Abs(a-b) < 0.001 }
@@ -119,5 +122,27 @@ func TestPositionAmbiguity(t *testing.T) {
 	p, _ = ParseTNC2("JA1ABC>APRS:!4903.50N/07201.75W-test")
 	if p == nil || p.Ambig != 0 {
 		t.Errorf("no ambig: %+v", p)
+	}
+}
+
+func TestMicEAmbiguity(t *testing.T) {
+	// 宛先の末尾から続く K/L/Z の数がレベル。SUQL0Z は末尾 Z のみ → 1
+	p, _ := ParseTNC2("JA1ABC>SUQL0Z:`c.l+%R/>test")
+	if p == nil || !p.HasPos || p.Ambig != 1 {
+		t.Fatalf("mic-e ambig 1: %+v", p)
+	}
+	p, _ = ParseTNC2("JA1ABC>SUQLLZ:`c.l+%R/>test")
+	if p == nil || p.Ambig != 3 {
+		t.Fatalf("mic-e ambig 3: %+v", p)
+	}
+}
+
+func TestAmbigStationJSON(t *testing.T) {
+	p, _ := ParseTNC2("JA1ABC>APRS:!4903.5 N/07201.7 W-test")
+	db := NewStationDB()
+	s := db.Update(p, "RF", time.Now(), 10)
+	b, _ := json.Marshal(s)
+	if !strings.Contains(string(b), `"ambig":1`) {
+		t.Errorf("json: %s", b)
 	}
 }

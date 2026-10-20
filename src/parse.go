@@ -449,6 +449,15 @@ func parseMicE(p *Packet) bool {
 		crs -= 400
 	}
 	p.Lat, p.Lon = lat, lon
+	// 宛先の末尾から続く K / L / Z (空白) の数が位置曖昧さレベル
+	n := 0
+	for i := 5; i >= 2 && (dst[i] == 'K' || dst[i] == 'L' || dst[i] == 'Z'); i-- {
+		n++
+	}
+	if n > 0 {
+		p.Ambig = n
+		p.Lat, p.Lon = ambigCenter(lat, n), ambigCenter(lon, n)
+	}
 	p.HasPos = true
 	if sp >= 0 && crs >= 0 && crs <= 360 {
 		p.HasCS = true
