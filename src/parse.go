@@ -25,6 +25,7 @@ type Packet struct {
 
 	HasPos   bool
 	Lat, Lon float64
+	Ambig    int // 位置曖昧さレベル 0〜4 (空白で伏せた桁数)
 	SymTable byte
 	SymCode  byte
 	HasCS    bool
@@ -200,6 +201,10 @@ func parsePosition(p *Packet, s string) bool {
 			return false
 		}
 		p.Lat, p.Lon = lat, lon
+		if n := strings.Count(s[0:8], " "); n >= 1 && n <= 4 {
+			p.Ambig = n
+			p.Lat, p.Lon = ambigCenter(lat, n), ambigCenter(lon, n)
+		}
 		p.SymTable, p.SymCode = s[8], s[18]
 		comment = s[19:]
 		if p.SymCode == '_' {
@@ -307,7 +312,21 @@ func base91(s string) int {
 	return v
 }
 
-// 位置曖昧さ (空白) は 0 として扱う
+// ambigSizeDeg は曖昧さレベル (1〜4) ごとの範囲の一辺 (度)。0.1分 / 1分 / 10分 / 1度。
+func ambigSizeDeg(level int) float64 {
+	return [...]float64{0, 0.1 / 60, 1.0 / 60, 10.0 / 60, 1}[level]
+}
+
+// ambigCenter は桁を伏せた座標 (0 埋めで読んだ値 = 範囲の端) を範囲の中心へ補正する。
+func ambigCenter(v float64, level int) float64 {
+	h := ambigSizeDeg(level) / 2
+	if v < 0 {
+		return v - h
+	}
+	return v + h
+}
+
+// 位置曖昧さ (空白) は 0 として読み、範囲の中心への補正は ambigCenter で行う
 func ambig(s string) string { return strings.ReplaceAll(s, " ", "0") }
 
 func parseLat(s string) (float64, bool) {

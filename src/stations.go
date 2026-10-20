@@ -15,6 +15,7 @@ type Station struct {
 	HasPos    bool         `json:"hasPos"`
 	Lat       float64      `json:"lat"`
 	Lon       float64      `json:"lon"`
+	Ambig     int          `json:"ambig,omitempty"` // 位置曖昧さレベル 1〜4
 	Sym       string       `json:"sym"`
 	Comment   string       `json:"comment"`
 	Status    string       `json:"status"`
@@ -91,6 +92,7 @@ func (db *StationDB) Update(p *Packet, via string, now time.Time, maxTrack int) 
 		}
 		s.HasPos = true
 		s.Lat, s.Lon = p.Lat, p.Lon
+		s.Ambig = p.Ambig
 		if sym := p.Symbol(); sym != "" {
 			s.Sym = sym
 		}

@@ -81,7 +81,10 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 L.control.scale({ imperial: false }).addTo(map);
 const trackLayer = L.layerGroup().addTo(map);
+const ambigLayer = L.layerGroup().addTo(map);
 const markerLayer = L.layerGroup().addTo(map);
+// 位置曖昧さレベル 1〜4 の範囲の一辺 (度): 0.1分 / 1分 / 10分 / 1度
+const AMBIG_DEG = [0, 0.1 / 60, 1 / 60, 10 / 60, 1];
 let mapCentered = false;
 
 function makeIcon(s) {
@@ -168,6 +171,7 @@ function drawStation(call) {
   if (!show) {
     if (e.marker) { markerLayer.removeLayer(e.marker); e.marker = null; }
     if (e.track) { trackLayer.removeLayer(e.track); e.track = null; }
+    if (e.ambig) { ambigLayer.removeLayer(e.ambig); e.ambig = null; }
     return;
   }
   const iconKey = s.sym + '|' + s.via + '|' + (s.lastRf && Date.now() - s.lastRf < 3600e3);
@@ -181,6 +185,15 @@ function drawStation(call) {
     if (e.marker.isPopupOpen()) e.marker.setPopupContent(popupHTML(s));
   }
   e.iconKey = iconKey;
+  if (s.ambig) {
+    const h = AMBIG_DEG[s.ambig] / 2;
+    const b = [[s.lat - h, s.lon - h], [s.lat + h, s.lon + h]];
+    if (e.ambig) e.ambig.setBounds(b);
+    else e.ambig = L.rectangle(b, { color: '#e0409a', weight: 1.5, fillColor: '#ff7ac0', fillOpacity: 0.25, interactive: false }).addTo(ambigLayer);
+  } else if (e.ambig) {
+    ambigLayer.removeLayer(e.ambig);
+    e.ambig = null;
+  }
   const pts = (s.track || []).map(p => [p[0], p[1]]);
   if ($('#opt-tracks').checked && pts.length > 1) {
     if (e.track) e.track.setLatLngs(pts);
@@ -204,6 +217,7 @@ function removeStation(call) {
   if (!e) return;
   if (e.marker) markerLayer.removeLayer(e.marker);
   if (e.track) trackLayer.removeLayer(e.track);
+  if (e.ambig) ambigLayer.removeLayer(e.ambig);
   stations.delete(call);
   listDirty = true;
 }

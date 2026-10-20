@@ -103,3 +103,21 @@ func TestGateRules(t *testing.T) {
 		t.Error("pathHas")
 	}
 }
+
+func TestPositionAmbiguity(t *testing.T) {
+	p, _ := ParseTNC2("JA1ABC>APRS:!4903.5 N/07201.7 W-test")
+	if p == nil || !p.HasPos || p.Ambig != 1 {
+		t.Fatalf("ambig level: %+v", p)
+	}
+	p, _ = ParseTNC2("JA1ABC>APRS:!49  .  N/072  .  W-test")
+	if p == nil || p.Ambig != 4 {
+		t.Fatalf("ambig 4: %+v", p)
+	}
+	if p.Lat < 49.49 || p.Lat > 49.51 || p.Lon > -72.49 || p.Lon < -72.51 {
+		t.Errorf("center: %v %v", p.Lat, p.Lon)
+	}
+	p, _ = ParseTNC2("JA1ABC>APRS:!4903.50N/07201.75W-test")
+	if p == nil || p.Ambig != 0 {
+		t.Errorf("no ambig: %+v", p)
+	}
+}
