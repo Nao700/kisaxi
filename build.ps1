@@ -11,7 +11,8 @@ $targets = @(
   @{ os = 'windows'; arch = 'amd64'; out = 'aprsigate-windows-x64.exe' },
   @{ os = 'linux';   arch = 'amd64'; out = 'aprsigate-linux-x64' },
   @{ os = 'linux';   arch = 'arm64'; out = 'aprsigate-linux-arm64' },
-  @{ os = 'linux';   arch = 'arm';   out = 'aprsigate-linux-armv7'; arm = '7' }
+  @{ os = 'linux';   arch = 'arm';   out = 'aprsigate-linux-armv7'; arm = '7' },
+  @{ os = 'linux';   arch = 'arm';   out = 'aprsigate-linux-armv6'; arm = '6' }
 )
 
 Push-Location (Join-Path $root 'src')
