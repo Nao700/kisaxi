@@ -179,6 +179,10 @@ function drawStation(call) {
     e.marker = L.marker([s.lat, s.lon], { icon: makeIcon(s), zIndexOffset: s.via === 'LOCAL' ? 1000 : 0 });
     e.marker.bindPopup(() => popupHTML(stations.get(call).s), { maxWidth: 380, minWidth: s.wx ? 330 : 50 });
     e.marker.addTo(markerLayer);
+    // 位置あいまいの範囲は、マーカーにカーソルを乗せている間 (とポップアップ表示中) だけ描く
+    e.marker.on('mouseover', () => { const x = stations.get(call); if (x && x.ambig) ambigLayer.addLayer(x.ambig); });
+    e.marker.on('mouseout', () => { const x = stations.get(call); if (x && x.ambig && !x.marker.isPopupOpen()) ambigLayer.removeLayer(x.ambig); });
+    e.marker.on('popupclose', () => { const x = stations.get(call); if (x && x.ambig) ambigLayer.removeLayer(x.ambig); });
   } else {
     e.marker.setLatLng([s.lat, s.lon]);
     if (e.iconKey !== iconKey) e.marker.setIcon(makeIcon(s));
@@ -189,7 +193,7 @@ function drawStation(call) {
     const h = AMBIG_DEG[s.ambig] / 2;
     const b = [[s.lat - h, s.lon - h], [s.lat + h, s.lon + h]];
     if (e.ambig) e.ambig.setBounds(b);
-    else e.ambig = L.rectangle(b, { color: '#e0409a', weight: 1.5, fillColor: '#ff7ac0', fillOpacity: 0.25, interactive: false }).addTo(ambigLayer);
+    else e.ambig = L.rectangle(b, { color: '#e0409a', weight: 1.5, fillColor: '#ff7ac0', fillOpacity: 0.25, interactive: false });
   } else if (e.ambig) {
     ambigLayer.removeLayer(e.ambig);
     e.ambig = null;
