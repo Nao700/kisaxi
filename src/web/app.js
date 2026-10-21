@@ -751,6 +751,7 @@ function renderStatus() {
   ti.title = !tnc ? 'TNC: 使用しない' : `${tnc.desc} ${tnc.connected ? '接続中' : '切断 ' + (tnc.error || '')}`;
   const s = status.stats || {};
   renderDX();
+  renderUpdate();
   $('#stats').textContent = `RF受信 ${s.rfRx || 0} / IS受信 ${s.isRx || 0} / RF→IS ${s.rfToIs || 0} / IS→RF ${s.isToRf || 0} / デジ ${s.digi || 0} / 送信 RF ${s.txRf || 0}・IS ${s.txIs || 0}`;
 }
 
@@ -768,6 +769,33 @@ function renderDX() {
   el.classList.add('has');
   el.title = `${status.dxText}\n(${cfg.dxReset === 'hour' ? '毎時 0 分' : '毎日 24 時'}にリセット・クリックで地図に表示)`;
 }
+function renderUpdate() {
+  const u = status.update, el = $('#upd');
+  el.hidden = !(u && u.newer);
+  if (el.hidden) return;
+  el.textContent = `新しいバージョン Ver.${u.latest} があります`;
+  el.href = u.url || '#';
+  el.title = 'クリックで公開ページを開きます (ダウンロードと入れ替えは手動で行ってください)';
+}
+function updateResultText(u) {
+  if (u.error) return u.error;
+  if (!u.latest) return 'まだ公開されたリリースはありません';
+  if (u.newer) return `新しいバージョン Ver.${u.latest} があります`;
+  return `最新です (公開中の最新: Ver.${u.latest})`;
+}
+$('#btn-upd-check').addEventListener('click', async () => {
+  const res = $('#upd-result'), btn = $('#btn-upd-check');
+  btn.disabled = true;
+  res.textContent = '確認しています…';
+  try {
+    const u = await api('/api/update/check', {});
+    res.innerHTML = esc(updateResultText(u)) + (u.newer && u.url ? ` <a href="${esc(u.url)}" target="_blank" rel="noopener">公開ページを開く</a>` : '');
+  } catch (e) {
+    res.textContent = e.message;
+  }
+  btn.disabled = false;
+});
+
 $('#dx').addEventListener('click', () => {
   const r = status.dx;
   if (r) map.setView([r.lat, r.lon], Math.max(map.getZoom(), 11));

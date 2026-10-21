@@ -209,6 +209,15 @@ func (a *App) Handler(static fs.FS) http.Handler {
 		})
 	})
 
+	// 更新の今すぐ確認 (設定で自動確認がオフでも使える)
+	mux.HandleFunc("/api/update/check", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || !sameOrigin(r) {
+			writeErr(w, http.StatusForbidden, "forbidden")
+			return
+		}
+		writeJSON(w, a.CheckUpdate(r.Context()))
+	})
+
 	mux.HandleFunc("/api/serialports", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, listSerialPorts())
 	})

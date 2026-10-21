@@ -55,6 +55,8 @@ type Config struct {
 	DXReset   string `json:"dxReset"`   // day (毎日 0 時) / hour (毎時 0 分)
 	DXUnit    string `json:"dxUnit"`    // km / mi
 
+	UpdateCheck bool `json:"updateCheck"` // 起動時と 24 時間ごとに新しいバージョンを確認 (試験中・既定オフ)
+
 	StationExpireMin int    `json:"stationExpireMin"`
 	TrackPoints      int    `json:"trackPoints"`
 	LogPackets       bool   `json:"logPackets"`
@@ -99,6 +101,7 @@ func defaultConfig() Config {
 		DXRF:             false,
 		DXReset:          "day",
 		DXUnit:           "km",
+		UpdateCheck:      false,
 		StationExpireMin: 60,
 		TrackPoints:      300,
 		LogPackets:       true,
