@@ -65,6 +65,11 @@ type App struct {
 	beaconMu   sync.Mutex
 	nextBcnRF  time.Time
 	nextBcnIS  time.Time
+
+	dxMu      sync.Mutex
+	dx        *DXRecord
+	dxPending bool // 新記録をまだ送っていない
+	dxNext    time.Time
 }
 
 func NewApp(cfg Config, cfgPath string, logDir string) *App {
@@ -191,6 +196,7 @@ func (a *App) Loop() {
 		a.checkBeacons(now)
 		a.checkObjects(now)
 		a.retryMessages(now)
+		a.tickDX(now)
 		if n%12 == 0 { // 1 分ごと
 			for _, k := range a.db.Expire(a.retention(), now) {
 				a.hub.Broadcast("remove", k)
@@ -239,6 +245,7 @@ func (a *App) handleRF(line string) {
 	} else {
 		a.updateStation(p, "RF")
 		a.handleMessage(p, "RF")
+		a.checkDX(p, cfg, time.Now())
 	}
 	if cfg.RFtoIS {
 		a.gateToIS(p, cfg)
@@ -602,6 +609,8 @@ type StatusInfo struct {
 	TNC      *TNCStatus `json:"tnc"`
 	Stats    Stats     `json:"stats"`
 	Stations int       `json:"stations"`
+	DX       *DXRecord `json:"dx"`
+	DXText   string    `json:"dxText,omitempty"`
 }
 
 func (a *App) Status() StatusInfo {
@@ -619,6 +628,9 @@ func (a *App) Status() StatusInfo {
 	st.Stats = a.stats
 	a.smu.Unlock()
 	st.Stations = len(a.db.All())
+	if st.DX = a.DX(); st.DX != nil {
+		st.DXText = dxStatusText(*st.DX, a.Config().DXUnit)
+	}
 	return st
 }
 

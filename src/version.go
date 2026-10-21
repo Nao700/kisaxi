@@ -4,7 +4,7 @@ package main
 
 const (
 	softwareName    = "APRSIGate"
-	softwareVersion = "1.0.4"
+	softwareVersion = "1.0.5"
 	developedBy     = "Developed by JR2TTA Nao feat.Claude"
 )
 
@@ -15,6 +15,14 @@ type ChangeEntry struct {
 }
 
 var changelog = []ChangeEntry{
+	{
+		Version: "1.0.5",
+		Date:    "2026-10-21",
+		Changes: []string{
+			"最長距離 (DX) 表示を追加。RF で直接受信した最も遠い局を記録し、更新したら「DX: JJ2YKR-2 35.29.80N 137.15.28E 46.8 km 80deg 08:20」のステータスを送信 (aprs.fi のステータス欄に表示、最短 10 分間隔)",
+			"DX のリセット (毎日 24 時 / 毎時 0 分)・距離の単位 (km / mi)・RF への送信を設定で選択可能。画面上部に現在の DX を表示し、クリックで地図に表示",
+		},
+	},
 	{
 		Version: "1.0.4",
 		Date:    "2026-10-20",
