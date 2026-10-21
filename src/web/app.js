@@ -143,7 +143,7 @@ function popupHTML(s) {
   const rows = [];
   const add = (k, v) => { if (v !== '' && v != null) rows.push(`<tr><td>${k}</td><td>${v}</td></tr>`); };
   if (s.object) add(s.type === 'item' ? 'アイテム' : 'オブジェクト', '送信元 ' + esc(s.owner) + (s.killed ? ' (削除)' : ''));
-  add('位置', `${s.lat.toFixed(5)}, ${s.lon.toFixed(5)}`);
+  add('位置', fmtDM(s.lat, 'NS') + ' ' + fmtDM(s.lon, 'EW'));
   if (cfg.lat || cfg.lon) {
     const d = distKm(cfg.lat, cfg.lon, s.lat, s.lon);
     add('距離/方位', `${d.toFixed(1)} km / ${Math.round(bearing(cfg.lat, cfg.lon, s.lat, s.lon))}°`);
@@ -191,8 +191,10 @@ function drawStation(call) {
   }
   e.iconKey = iconKey;
   if (s.ambig) {
-    const h = AMBIG_DEG[s.ambig] / 2;
-    const b = [[s.lat - h, s.lon - h], [s.lat + h, s.lon + h]];
+    // 位置が入る格子 (曖昧さレベルの一辺) を範囲として描く
+    const z = AMBIG_DEG[s.ambig];
+    const la = Math.floor(s.lat / z + 1e-9) * z, lo = Math.floor(s.lon / z + 1e-9) * z;
+    const b = [[la, lo], [la + z, lo + z]];
     if (e.ambig) e.ambig.setBounds(b);
     else e.ambig = L.rectangle(b, { color: '#e0409a', weight: 1.5, fillColor: '#ff7ac0', fillOpacity: 0.25, interactive: false });
   } else if (e.ambig) {
@@ -406,6 +408,11 @@ let objDirty = false;
 let objPicking = false;
 const objLayer = L.layerGroup();
 
+// 35°05.59' N 136°55.08' E 形式 (aprs.fi と同じ度分表記)
+function fmtDM(v, hemi) {
+  const t = Math.round(Math.abs(v) * 6000);
+  return `${Math.floor(t / 6000)}°${String(Math.floor(t % 6000 / 100)).padStart(2, '0')}.${String(t % 100).padStart(2, '0')}' ${hemi[v < 0 ? 1 : 0]}`;
+}
 function fmtLat(v) { const h = v < 0 ? 'S' : 'N'; const t = Math.round(Math.abs(v) * 6000); return `${String(Math.floor(t / 6000)).padStart(2, '0')}${String(Math.floor(t % 6000 / 100)).padStart(2, '0')}.${String(t % 100).padStart(2, '0')}${h}`; }
 function fmtLon(v) { const h = v < 0 ? 'W' : 'E'; const t = Math.round(Math.abs(v) * 6000); return `${String(Math.floor(t / 6000)).padStart(3, '0')}${String(Math.floor(t % 6000 / 100)).padStart(2, '0')}.${String(t % 100).padStart(2, '0')}${h}`; }
 function zulu() { const d = new Date(); const p = n => String(n).padStart(2, '0'); return p(d.getUTCDate()) + p(d.getUTCHours()) + p(d.getUTCMinutes()) + 'z'; }
