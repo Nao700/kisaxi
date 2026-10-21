@@ -157,3 +157,16 @@ func TestMicEAmbiguityReal(t *testing.T) {
 		t.Errorf("lat center: %v", p.Lat)
 	}
 }
+
+func TestMicEAmbiguityLonSnap(t *testing.T) {
+	// 経度は伏せられていないが、緯度と同じ格子の中心に揃える (範囲の中心 = 位置)
+	p, _ := ParseTNC2("JA1ABC>SUQLLZ:`c.l+%R/>test")
+	if p == nil || p.Ambig != 3 {
+		t.Fatalf("parse: %+v", p)
+	}
+	size := ambigSizeDeg(3)
+	cell := math.Floor(math.Abs(p.Lon) / size)
+	if got := math.Abs(p.Lon) - cell*size; math.Abs(got-size/2) > 1e-9 {
+		t.Errorf("lon not at cell center: lon=%f offset=%f", p.Lon, got)
+	}
+}

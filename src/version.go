@@ -4,7 +4,7 @@ package main
 
 const (
 	softwareName    = "APRSIGate"
-	softwareVersion = "1.0.5"
+	softwareVersion = "1.0.6"
 	developedBy     = "Developed by JR2TTA Nao feat.Claude"
 )
 
@@ -15,6 +15,13 @@ type ChangeEntry struct {
 }
 
 var changelog = []ChangeEntry{
+	{
+		Version: "1.0.6",
+		Date:    "2026-10-22",
+		Changes: []string{
+			"Mic-E の位置曖昧さ: 経度も緯度と同じ格子の中心に揃え、ピンクの範囲の中心に局のマーカーが来るよう修正 (経度の実値の分だけ範囲がずれて見えていた)",
+		},
+	},
 	{
 		Version: "1.0.5",
 		Date:    "2026-10-21",
