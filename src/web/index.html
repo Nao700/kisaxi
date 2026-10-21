@@ -186,6 +186,30 @@
         </fieldset>
 
         <fieldset>
+          <legend>出力・アンテナ (PHG)</legend>
+          <label class="chk"><input type="checkbox" name="phgEnabled"> ビーコンに PHG (出力・アンテナ高・利得・指向) を付ける</label>
+          <div class="row">
+            <label>送信出力 (W) <input name="phgPower" type="number" min="0" step="any" class="w5"></label>
+            <label>アンテナ高 (m) <input name="phgHeight" type="number" min="0" step="any" class="w5"></label>
+            <label>利得 (dBi) <input name="phgGain" type="number" min="0" max="9" step="any" class="w5"></label>
+          </div>
+          <label>指向 <select name="phgDir">
+            <option value="0">無指向</option>
+            <option value="45">北東 (45°)</option>
+            <option value="90">東 (90°)</option>
+            <option value="135">南東 (135°)</option>
+            <option value="180">南 (180°)</option>
+            <option value="225">南西 (225°)</option>
+            <option value="270">西 (270°)</option>
+            <option value="315">北西 (315°)</option>
+            <option value="360">北 (360°)</option>
+          </select></label>
+          <label class="chk"><input type="checkbox" name="phgRangeMap"> 地図に通達範囲を表示</label>
+          <p id="phg-preview"></p>
+          <p class="hint">アンテナ高は海抜ではなく、周囲の平均的な地表からの高さ (HAAT) です。各値は PHG の 1 桁コードに丸めて送ります (出力 0/1/4/9/16/25/36/49/64/81 W、高さ 10×2ⁿ ft)。通達範囲は APRS 規格の目安の式で計算した値で、指向性アンテナでも円で表示します。PHG を付けるとコメントは 36 文字までです。</p>
+        </fieldset>
+
+        <fieldset>
           <legend>APRS-IS</legend>
           <label class="chk"><input type="checkbox" name="isEnabled"> APRS-IS に接続する</label>
           <label>サーバー <input name="isServer" placeholder="rotate.aprs2.net:14580"></label>

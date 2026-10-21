@@ -82,6 +82,7 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 L.control.scale({ imperial: false }).addTo(map);
 const trackLayer = L.layerGroup().addTo(map);
 const ambigLayer = L.layerGroup().addTo(map);
+const rangeLayer = L.layerGroup().addTo(map);
 const markerLayer = L.layerGroup().addTo(map);
 // 位置曖昧さレベル 1〜4 の範囲の一辺 (度): 0.1分 / 1分 / 10分 / 1度
 const AMBIG_DEG = [0, 0.1 / 60, 1 / 60, 10 / 60, 1];
@@ -649,7 +650,7 @@ async function loadAbout() {
 }
 
 // ---------- 設定 ----------
-const numFields = ['lat', 'lon', 'baud', 'txDelayMs', 'localHeardMin', 'maxIsToRfPerMin', 'beaconRfMin', 'beaconIsMin', 'stationExpireMin', 'trackPoints'];
+const numFields = ['lat', 'lon', 'phgPower', 'phgHeight', 'phgGain', 'phgDir', 'baud', 'txDelayMs', 'localHeardMin', 'maxIsToRfPerMin', 'beaconRfMin', 'beaconIsMin', 'stationExpireMin', 'trackPoints'];
 function fillForm() {
   const f = $('#cfg-form');
   for (const el of f.elements) {
@@ -659,6 +660,7 @@ function fillForm() {
   }
   updateTncFields();
   updateSymPreview();
+  updatePhgPreview();
 }
 function readForm() {
   const f = $('#cfg-form');
@@ -680,6 +682,32 @@ function updateSymPreview() {
   const f = $('#cfg-form');
   $('#sym-preview').innerHTML = symHTML((f.symbolTable.value || '/') + (f.symbol.value || '/'));
 }
+// PHG コード (src/phg.go の phgCode と同じ丸め) と通達範囲 (km)。range(mi) = sqrt(2 * H(ft) * sqrt(P/10 * G/2))
+function phgInfo(powerW, heightM, gainDB, dir) {
+  const digit = v => Math.min(9, Math.max(0, Math.round(v)));
+  const p = digit(Math.sqrt(Math.max(powerW, 0)));
+  const ft = heightM / 0.3048;
+  const h = ft > 10 ? digit(Math.log2(ft / 10)) : 0;
+  const g = digit(gainDB);
+  const d = dir > 0 ? Math.min(8, Math.max(1, Math.floor((dir + 22) / 45))) : 0;
+  const hft = 10 * 2 ** h;
+  const km = Math.sqrt(2 * hft * Math.sqrt((p * p) / 10 * (10 ** (g / 10)) / 2)) * 1.609344;
+  return { code: `PHG${p}${h}${g}${d}`, km, w: p * p, m: hft * 0.3048, g, dir: d * 45 };
+}
+function updatePhgPreview() {
+  const f = $('#cfg-form');
+  const r = phgInfo(Number(f.phgPower.value) || 0, Number(f.phgHeight.value) || 0, Number(f.phgGain.value) || 0, Number(f.phgDir.value) || 0);
+  $('#phg-preview').textContent = `${r.code} → 通達範囲 約 ${r.km.toFixed(1)} km (送信される値: ${r.w} W / ${r.m.toFixed(1)} m / ${r.g} dBi / ${r.dir ? r.dir + '°' : '無指向'})`;
+}
+function updateRangeCircle() {
+  rangeLayer.clearLayers();
+  if (!cfg.phgEnabled || !cfg.phgRangeMap || !(cfg.lat || cfg.lon)) return;
+  const r = phgInfo(cfg.phgPower, cfg.phgHeight, cfg.phgGain, cfg.phgDir);
+  if (r.km <= 0) return;
+  L.circle([cfg.lat, cfg.lon], { radius: r.km * 1000, color: '#2a7de1', weight: 1.5, dashArray: '6 4', fillColor: '#2a7de1', fillOpacity: 0.06, interactive: false }).addTo(rangeLayer);
+}
+for (const n of ['phgPower', 'phgHeight', 'phgGain']) $('#cfg-form')[n].addEventListener('input', updatePhgPreview);
+$('#cfg-form').phgDir.addEventListener('change', updatePhgPreview);
 $('#cfg-form').tncType.addEventListener('change', updateTncFields);
 $('#cfg-form').symbolTable.addEventListener('input', updateSymPreview);
 $('#cfg-form').symbol.addEventListener('input', updateSymPreview);
@@ -708,6 +736,7 @@ $('#cfg-form').addEventListener('submit', async ev => {
 function applyConfigUI() {
   $('#mycall').textContent = cfg.callsign || '(未設定)';
   listDirty = true;
+  updateRangeCircle();
 }
 
 // ---------- ステータス ----------

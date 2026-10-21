@@ -17,6 +17,13 @@ type Config struct {
 	Symbol      string  `json:"symbol"`
 	Comment     string  `json:"comment"`
 
+	PHGEnabled  bool    `json:"phgEnabled"`  // ビーコンに PHG (出力・アンテナ高・利得・指向) を付ける
+	PHGPower    float64 `json:"phgPower"`    // 送信出力 (W)
+	PHGHeight   float64 `json:"phgHeight"`   // アンテナ高 (m, 平均地表高)
+	PHGGain     float64 `json:"phgGain"`     // アンテナ利得 (dBi)
+	PHGDir      int     `json:"phgDir"`      // 指向 0=無指向, 45〜360 (度)
+	PHGRangeMap bool    `json:"phgRangeMap"` // 地図に通達範囲を表示
+
 	ISEnabled bool   `json:"isEnabled"`
 	ISServer  string `json:"isServer"`
 	ISFilter  string `json:"isFilter"`
@@ -28,20 +35,20 @@ type Config struct {
 	TNCInit     string `json:"tncInit"` // KISS モード移行前に送るコマンド (改行区切り)
 	TxDelayMs   int    `json:"txDelayMs"`
 
-	RFtoIS         bool   `json:"rfToIs"`
-	IStoRF         bool   `json:"isToRf"`
-	LocalHeardMin  int    `json:"localHeardMin"`
-	IStoRFPath     string `json:"isToRfPath"`
-	MaxIStoRFPerMin int   `json:"maxIsToRfPerMin"`
+	RFtoIS          bool   `json:"rfToIs"`
+	IStoRF          bool   `json:"isToRf"`
+	LocalHeardMin   int    `json:"localHeardMin"`
+	IStoRFPath      string `json:"isToRfPath"`
+	MaxIStoRFPerMin int    `json:"maxIsToRfPerMin"`
 
 	DigiEnabled bool `json:"digiEnabled"` // デジピータ (WIDE1-1・自局コール宛を中継)
 	DigiWide    bool `json:"digiWide"`    // WIDE2-n も中継する
 
-	BeaconRF       bool   `json:"beaconRf"`
-	BeaconRFMin    int    `json:"beaconRfMin"`
-	BeaconRFPath   string `json:"beaconRfPath"`
-	BeaconIS       bool   `json:"beaconIs"`
-	BeaconISMin    int    `json:"beaconIsMin"`
+	BeaconRF     bool   `json:"beaconRf"`
+	BeaconRFMin  int    `json:"beaconRfMin"`
+	BeaconRFPath string `json:"beaconRfPath"`
+	BeaconIS     bool   `json:"beaconIs"`
+	BeaconISMin  int    `json:"beaconIsMin"`
 
 	DXEnabled bool   `json:"dxEnabled"` // 最長距離 (DX) 更新時にステータスを送る
 	DXRF      bool   `json:"dxRf"`      // DX ステータスを RF にも送る
@@ -66,6 +73,12 @@ func defaultConfig() Config {
 		SymbolTable:      "I",
 		Symbol:           "&",
 		Comment:          "APRS I-Gate",
+		PHGEnabled:       false,
+		PHGPower:         10,
+		PHGHeight:        10,
+		PHGGain:          3,
+		PHGDir:           0,
+		PHGRangeMap:      true,
 		ISEnabled:        true,
 		ISServer:         "rotate.aprs2.net:14580",
 		ISFilter:         "m/50",
@@ -134,6 +147,9 @@ func (c *Config) Normalize() {
 	if c.HTTPListen == "" {
 		c.HTTPListen = d.HTTPListen
 	}
+	if c.PHGDir%45 != 0 || c.PHGDir < 0 || c.PHGDir > 360 {
+		c.PHGDir = 0
+	}
 	if c.DXReset != "hour" {
 		c.DXReset = "day"
 	}
@@ -152,6 +168,17 @@ func (c *Config) Validate() error {
 	}
 	if c.Lat < -90 || c.Lat > 90 || c.Lon < -180 || c.Lon > 180 {
 		return errors.New("緯度・経度の範囲が正しくありません")
+	}
+	if c.PHGEnabled {
+		if c.PHGPower < 0 || c.PHGHeight < 0 || c.PHGGain < 0 {
+			return errors.New("出力・アンテナ高・利得は 0 以上で入力してください")
+		}
+		if len(c.Comment) > 36 {
+			return errors.New("PHG を付けるときはコメントを 36 文字以内にしてください")
+		}
+		if strings.HasPrefix(c.Comment, "PHG") {
+			return errors.New("PHG を設定欄で付けるときは、コメント先頭の PHG を削除してください")
+		}
 	}
 	for _, p := range []string{c.IStoRFPath, c.BeaconRFPath} {
 		if p == "" {
