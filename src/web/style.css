@@ -185,6 +185,7 @@ legend { font-weight: 600; padding: 0 4px; }
 .settings .row { display: flex; gap: 10px; align-items: flex-end; }
 .settings .row > label { flex: 1; }
 .settings input.w3 { width: 3.5em; }
+.settings input.w5 { width: 5.5em; }
 #btn-pickpos { margin-top: 6px; }
 #btn-pickpos.active, #obj-pick.active { background: var(--accent); color: #fff; }
 /* 日本語フォントではバックスラッシュが「¥」に見えるため、英数字専用の欄は英字フォントにする */

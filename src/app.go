@@ -489,7 +489,11 @@ func formatLon(lon float64) string {
 }
 
 func beaconBody(cfg Config) string {
-	return "=" + formatLat(cfg.Lat) + cfg.SymbolTable + formatLon(cfg.Lon) + cfg.Symbol + cfg.Comment
+	ext := ""
+	if cfg.PHGEnabled {
+		ext = phgCode(cfg.PHGPower, cfg.PHGHeight, cfg.PHGGain, cfg.PHGDir)
+	}
+	return "=" + formatLat(cfg.Lat) + cfg.SymbolTable + formatLon(cfg.Lon) + cfg.Symbol + ext + cfg.Comment
 }
 
 func (a *App) updateOwnStation() {
