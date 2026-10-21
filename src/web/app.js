@@ -191,10 +191,9 @@ function drawStation(call) {
   }
   e.iconKey = iconKey;
   if (s.ambig) {
-    // 位置が入る格子 (曖昧さレベルの一辺) を範囲として描く
-    const z = AMBIG_DEG[s.ambig];
-    const la = Math.floor(s.lat / z + 1e-9) * z, lo = Math.floor(s.lon / z + 1e-9) * z;
-    const b = [[la, lo], [la + z, lo + z]];
+    // マーカー (範囲の中心) を中心に、曖昧さレベルの一辺で描く
+    const h = AMBIG_DEG[s.ambig] / 2;
+    const b = [[s.lat - h, s.lon - h], [s.lat + h, s.lon + h]];
     if (e.ambig) e.ambig.setBounds(b);
     else e.ambig = L.rectangle(b, { color: '#e0409a', weight: 1.5, fillColor: '#ff7ac0', fillOpacity: 0.25, interactive: false });
   } else if (e.ambig) {
