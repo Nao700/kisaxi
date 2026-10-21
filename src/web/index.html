@@ -16,6 +16,7 @@
   <div class="ind" id="ind-tnc" title="TNC"><span class="dot"></span><span class="lbl">TNC</span></div>
   <div id="stats"></div>
   <div id="dx" title="最長距離 (RF 直接受信)"></div>
+  <a id="upd" hidden target="_blank" rel="noopener"></a>
   <div class="spacer"></div>
   <button id="btn-center" title="自局を中心に表示">自局</button>
   <button id="btn-beacon">ビーコン送信</button>
@@ -296,6 +297,12 @@
         </fieldset>
 
         <fieldset>
+          <legend>更新の確認 (試験中)</legend>
+          <label class="chk"><input type="checkbox" name="updateCheck"> 新しいバージョンが公開されたら知らせる (起動時と 24 時間ごとに確認)</label>
+          <p class="hint">公開ページ (GitHub の kisaxi-release) の最新リリースを確認し、新しい版があれば画面上部に表示します。ダウンロードと入れ替えは自動では行いません。「このソフトについて」の「今すぐ更新を確認」はこの設定に関係なく使えます。</p>
+        </fieldset>
+
+        <fieldset>
           <legend>その他</legend>
           <div class="row">
             <label>受信データの保持時間 (分) <input name="stationExpireMin" type="number" min="1"></label>
@@ -319,6 +326,7 @@
         <h2>APRS I-Gate</h2>
         <p class="ver">バージョン <span id="about-version"></span></p>
         <p class="credit" id="about-credit"></p>
+        <p class="upd-check"><button id="btn-upd-check" type="button">今すぐ更新を確認</button> <span id="upd-result"></span></p>
         <h3>変更履歴</h3>
         <div id="about-changelog"></div>
         <h3>使用しているもの</h3>

@@ -62,14 +62,19 @@ type App struct {
 	objNext  map[string]time.Time
 	objKills []pendingKill
 
-	beaconMu   sync.Mutex
-	nextBcnRF  time.Time
-	nextBcnIS  time.Time
+	beaconMu  sync.Mutex
+	nextBcnRF time.Time
+	nextBcnIS time.Time
 
 	dxMu      sync.Mutex
 	dx        *DXRecord
 	dxPending bool // 新記録をまだ送っていない
 	dxNext    time.Time
+
+	updMu   sync.Mutex
+	upd     *UpdateInfo
+	updNext time.Time
+	updBusy bool
 }
 
 func NewApp(cfg Config, cfgPath string, logDir string) *App {
@@ -197,6 +202,7 @@ func (a *App) Loop() {
 		a.checkObjects(now)
 		a.retryMessages(now)
 		a.tickDX(now)
+		a.tickUpdate(now)
 		if n%12 == 0 { // 1 分ごと
 			for _, k := range a.db.Expire(a.retention(), now) {
 				a.hub.Broadcast("remove", k)
@@ -606,15 +612,16 @@ func (a *App) emitPacket(dir, line string) {
 }
 
 type StatusInfo struct {
-	Callsign string    `json:"callsign"`
-	Version  string    `json:"version"`
-	Uptime   int64     `json:"uptime"`
-	IS       *ISStatus `json:"is"`
-	TNC      *TNCStatus `json:"tnc"`
-	Stats    Stats     `json:"stats"`
-	Stations int       `json:"stations"`
-	DX       *DXRecord `json:"dx"`
-	DXText   string    `json:"dxText,omitempty"`
+	Callsign string      `json:"callsign"`
+	Version  string      `json:"version"`
+	Uptime   int64       `json:"uptime"`
+	IS       *ISStatus   `json:"is"`
+	TNC      *TNCStatus  `json:"tnc"`
+	Stats    Stats       `json:"stats"`
+	Stations int         `json:"stations"`
+	DX       *DXRecord   `json:"dx"`
+	DXText   string      `json:"dxText,omitempty"`
+	Update   *UpdateInfo `json:"update,omitempty"`
 }
 
 func (a *App) Status() StatusInfo {
@@ -635,6 +642,7 @@ func (a *App) Status() StatusInfo {
 	if st.DX = a.DX(); st.DX != nil {
 		st.DXText = dxStatusText(*st.DX, a.Config().DXUnit)
 	}
+	st.Update = a.Update()
 	return st
 }
 

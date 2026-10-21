@@ -79,6 +79,8 @@ button.small { padding: 2px 8px; font-size: 12px; }
 #dx { color: var(--muted); font-size: 12px; }
 #dx.has { color: var(--text); cursor: pointer; }
 #dx.has:hover { color: var(--accent); }
+#upd { color: var(--warn); font-size: 12px; font-weight: 600; }
+#upd[hidden] { display: none; }
 .spacer { flex: 1; }
 
 #offline { background: var(--bad); color: #fff; padding: 6px 12px; font-weight: 600; }
@@ -170,6 +172,7 @@ main { flex: 1; display: flex; min-height: 0; }
 .about h3 { margin: 18px 0 6px; font-size: 14px; border-bottom: 1px solid var(--border); padding-bottom: 3px; }
 .about .ver { margin: 4px 0 0; font-size: 14px; }
 .about .credit { margin: 8px 0 0; font-weight: 600; }
+.about .upd-check { margin: 10px 0 0; font-size: 13px; }
 .about .rel { margin-bottom: 10px; }
 .about .rel b { font-size: 13px; }
 .about .rel .date { color: var(--muted); margin-left: 8px; font-size: 12px; }
