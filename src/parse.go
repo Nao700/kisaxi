@@ -326,16 +326,6 @@ func ambigCenter(v float64, level int) float64 {
 	return v + h
 }
 
-// ambigFloor は座標を曖昧さレベルの格子 (0 に近い側の端) へ切り下げる。
-func ambigFloor(v float64, level int) float64 {
-	size := ambigSizeDeg(level)
-	f := math.Floor(math.Abs(v)/size+1e-9) * size
-	if v < 0 {
-		return -f
-	}
-	return f
-}
-
 // 位置曖昧さ (空白) は 0 として読み、範囲の中心への補正は ambigCenter で行う
 func ambig(s string) string { return strings.ReplaceAll(s, " ", "0") }
 
@@ -466,8 +456,8 @@ func parseMicE(p *Packet) bool {
 	}
 	if n > 0 {
 		p.Ambig = n
-		// Mic-E の経度は桁が伏せられていないので、緯度と同じ格子に切り下げてから中心へ寄せる
-		p.Lat, p.Lon = ambigCenter(lat, n), ambigCenter(ambigFloor(lon, n), n)
+		// Mic-E の経度は桁が伏せられていないので実値のまま使う (範囲の描画は緯度経度が入る格子)
+		p.Lat = ambigCenter(lat, n)
 	}
 	p.HasPos = true
 	if sp >= 0 && crs >= 0 && crs <= 360 {
