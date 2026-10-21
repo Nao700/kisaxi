@@ -15,6 +15,7 @@
   <div class="ind" id="ind-is" title="APRS-IS"><span class="dot"></span><span class="lbl">APRS-IS</span></div>
   <div class="ind" id="ind-tnc" title="TNC"><span class="dot"></span><span class="lbl">TNC</span></div>
   <div id="stats"></div>
+  <div id="dx" title="最長距離 (RF 直接受信)"></div>
   <div class="spacer"></div>
   <button id="btn-center" title="自局を中心に表示">自局</button>
   <button id="btn-beacon">ビーコン送信</button>
@@ -251,6 +252,23 @@
             <label class="chk"><input type="checkbox" name="beaconIs"> APRS-IS ビーコン</label>
             <label>間隔 (分) <input name="beaconIsMin" type="number" min="5"></label>
           </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>最長距離 (DX)</legend>
+          <label class="chk"><input type="checkbox" name="dxEnabled"> 最長距離を更新したらステータスを APRS-IS に送信 (aprs.fi のステータス欄に表示)</label>
+          <label class="chk"><input type="checkbox" name="dxRf"> RF にも送信 (ビーコンの RF 送信パスを使用)</label>
+          <div class="row">
+            <label>リセット <select name="dxReset">
+              <option value="day">毎日 24 時</option>
+              <option value="hour">毎時 0 分</option>
+            </select></label>
+            <label>距離の単位 <select name="dxUnit">
+              <option value="km">km</option>
+              <option value="mi">mi (マイル)</option>
+            </select></label>
+          </div>
+          <p class="hint">RF で直接受信した局 (デジピート経由・オブジェクト・位置あいまいを除く) のうち、自局から最も遠い局を記録し「DX: JJ2YKR-2 35.29.80N 137.15.28E 46.8 km 80deg 08:20」の形で送ります。送信は最短 10 分間隔で、その間に記録が伸びたら 10 分後に最新を送ります。</p>
         </fieldset>
 
         <fieldset>

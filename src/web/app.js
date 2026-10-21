@@ -721,8 +721,28 @@ function renderStatus() {
   ti.className = 'ind ' + (!tnc ? '' : tnc.connected ? 'ok' : 'bad');
   ti.title = !tnc ? 'TNC: 使用しない' : `${tnc.desc} ${tnc.connected ? '接続中' : '切断 ' + (tnc.error || '')}`;
   const s = status.stats || {};
+  renderDX();
   $('#stats').textContent = `RF受信 ${s.rfRx || 0} / IS受信 ${s.isRx || 0} / RF→IS ${s.rfToIs || 0} / IS→RF ${s.isToRf || 0} / デジ ${s.digi || 0} / 送信 RF ${s.txRf || 0}・IS ${s.txIs || 0}`;
 }
+
+function renderDX() {
+  const r = status.dx, el = $('#dx');
+  if (!r) {
+    el.textContent = 'DX: なし';
+    el.classList.remove('has');
+    el.title = '最長距離 (RF 直接受信): まだ記録なし';
+    return;
+  }
+  const d = cfg.dxUnit === 'mi' ? `${(r.km / 1.609344).toFixed(1)} mi` : `${r.km.toFixed(1)} km`;
+  const t = new Date(r.t);
+  el.textContent = `DX: ${r.call} ${d} ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
+  el.classList.add('has');
+  el.title = `${status.dxText}\n(${cfg.dxReset === 'hour' ? '毎時 0 分' : '毎日 24 時'}にリセット・クリックで地図に表示)`;
+}
+$('#dx').addEventListener('click', () => {
+  const r = status.dx;
+  if (r) map.setView([r.lat, r.lon], Math.max(map.getZoom(), 11));
+});
 
 $('#btn-beacon').addEventListener('click', async () => {
   try {

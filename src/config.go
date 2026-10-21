@@ -43,6 +43,11 @@ type Config struct {
 	BeaconIS       bool   `json:"beaconIs"`
 	BeaconISMin    int    `json:"beaconIsMin"`
 
+	DXEnabled bool   `json:"dxEnabled"` // 最長距離 (DX) 更新時にステータスを送る
+	DXRF      bool   `json:"dxRf"`      // DX ステータスを RF にも送る
+	DXReset   string `json:"dxReset"`   // day (毎日 0 時) / hour (毎時 0 分)
+	DXUnit    string `json:"dxUnit"`    // km / mi
+
 	StationExpireMin int    `json:"stationExpireMin"`
 	TrackPoints      int    `json:"trackPoints"`
 	LogPackets       bool   `json:"logPackets"`
@@ -77,6 +82,10 @@ func defaultConfig() Config {
 		BeaconRFPath:     "WIDE1-1",
 		BeaconIS:         true,
 		BeaconISMin:      20,
+		DXEnabled:        true,
+		DXRF:             false,
+		DXReset:          "day",
+		DXUnit:           "km",
 		StationExpireMin: 60,
 		TrackPoints:      300,
 		LogPackets:       true,
@@ -124,6 +133,12 @@ func (c *Config) Normalize() {
 	}
 	if c.HTTPListen == "" {
 		c.HTTPListen = d.HTTPListen
+	}
+	if c.DXReset != "hour" {
+		c.DXReset = "day"
+	}
+	if c.DXUnit != "mi" {
+		c.DXUnit = "km"
 	}
 	c.IStoRFPath = strings.ToUpper(strings.TrimSpace(c.IStoRFPath))
 	c.BeaconRFPath = strings.ToUpper(strings.TrimSpace(c.BeaconRFPath))
