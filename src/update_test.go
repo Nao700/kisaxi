@@ -1,9 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -76,5 +83,69 @@ func TestUpdateCheckOffByDefault(t *testing.T) {
 func TestPlatformAsset(t *testing.T) {
 	if a := platformAsset(); a == "" || a[:10] != "aprsigate-" {
 		t.Errorf("platformAsset() = %q", a)
+	}
+}
+
+func fakeBinary(size int) []byte {
+	b := make([]byte, size)
+	copy(b, []byte("\x7fELF"))
+	if runtime.GOOS == "windows" {
+		copy(b, []byte("MZ"))
+	}
+	return b
+}
+
+func TestDownloadBinary(t *testing.T) {
+	good := fakeBinary(minBinarySize + 10)
+	sum := sha256.Sum256(good)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/good":
+			w.Write(good)
+		case "/small":
+			w.Write(fakeBinary(100))
+		case "/html":
+			w.Write(bytes.Repeat([]byte("<html>"), minBinarySize))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	dir := t.TempDir()
+	ctx := context.Background()
+
+	p, err := downloadBinary(ctx, srv.URL+"/good", "sha256:"+hex.EncodeToString(sum[:]), dir)
+	if err != nil {
+		t.Fatalf("good: %v", err)
+	}
+	if got, _ := os.ReadFile(p); !bytes.Equal(got, good) {
+		t.Error("downloaded content differs")
+	}
+	if _, err := downloadBinary(ctx, srv.URL+"/good", "sha256:"+strings.Repeat("0", 64), dir); err == nil {
+		t.Error("checksum mismatch accepted")
+	}
+	for _, path := range []string{"/small", "/html", "/missing"} {
+		if _, err := downloadBinary(ctx, srv.URL+path, "", dir); err == nil {
+			t.Errorf("%s accepted", path)
+		}
+	}
+	if _, err := downloadBinary(ctx, "http://example.com/x", "", dir); err == nil {
+		t.Error("plain http accepted")
+	}
+	if ents, _ := os.ReadDir(dir); len(ents) != 1 {
+		t.Errorf("temp files left behind: %d entries", len(ents))
+	}
+}
+
+func TestReplaceExecutable(t *testing.T) {
+	dir := t.TempDir()
+	exe, nw := filepath.Join(dir, "app"), filepath.Join(dir, ".update-1")
+	os.WriteFile(exe, []byte("old"), 0o755)
+	os.WriteFile(nw, []byte("new"), 0o755)
+	if err := replaceExecutable(exe, nw); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := os.ReadFile(exe); string(got) != "new" {
+		t.Errorf("exe = %q", got)
 	}
 }
