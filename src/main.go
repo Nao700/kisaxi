@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"strings"
 	"syscall"
+	"time"
 )
 
 //go:embed web
@@ -39,7 +40,9 @@ func main() {
 	cfgFlag := flag.String("config", "", "設定ファイルのパス (既定: 実行ファイルと同じフォルダの aprsigate.json)")
 	listen := flag.String("listen", "", "Web UI の待ち受けアドレス (例: 0.0.0.0:8073)")
 	noBrowser := flag.Bool("nobrowser", false, "起動時にブラウザを開かない")
+	afterUpdate := flag.Bool("after-update", false, "更新後の再起動 (内部用: 古いプロセスが終わるまで待ち受けを再試行する)")
 	flag.Parse()
+	cleanupOldBinary()
 
 	path := *cfgFlag
 	if path == "" {
@@ -63,6 +66,10 @@ func main() {
 
 	static, _ := fs.Sub(webFiles, "web")
 	ln, err := net.Listen("tcp", cfg.HTTPListen)
+	for i := 0; err != nil && *afterUpdate && i < 20; i++ {
+		time.Sleep(500 * time.Millisecond)
+		ln, err = net.Listen("tcp", cfg.HTTPListen)
+	}
 	if err != nil {
 		log.Fatalf("Web UI を %s で開始できません: %v", cfg.HTTPListen, err)
 	}

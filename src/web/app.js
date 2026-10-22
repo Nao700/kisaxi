@@ -781,8 +781,24 @@ function renderUpdate() {
   if (el.hidden) return;
   el.textContent = `新しいバージョン Ver.${u.latest} があります`;
   el.href = u.url || '#';
-  el.title = 'クリックで公開ページを開きます (ダウンロードと入れ替えは手動で行ってください)';
+  el.title = u.canApply ? 'クリックで更新して再起動します' : 'クリックで公開ページを開きます (この環境用のファイルが見つからないため手動で入れ替えてください)';
 }
+async function applyUpdate(u) {
+  if (!confirm(`Ver.${u.latest} をダウンロードして入れ替え、再起動します。\nTNC・APRS-IS は一時的に切れます。よろしいですか？`)) return;
+  try {
+    await api('/api/update/apply', {});
+    toast('更新しています。まもなく再起動します');
+  } catch (e) {
+    toast(e.message);
+  }
+}
+$('#upd').addEventListener('click', (ev) => {
+  const u = status.update;
+  if (u && u.newer && u.canApply) {
+    ev.preventDefault();
+    applyUpdate(u);
+  }
+});
 function updateResultText(u) {
   if (u.error) return u.error;
   if (!u.latest) return 'まだ公開されたリリースはありません';
@@ -795,7 +811,10 @@ $('#btn-upd-check').addEventListener('click', async () => {
   res.textContent = '確認しています…';
   try {
     const u = await api('/api/update/check', {});
-    res.innerHTML = esc(updateResultText(u)) + (u.newer && u.url ? ` <a href="${esc(u.url)}" target="_blank" rel="noopener">公開ページを開く</a>` : '');
+    res.innerHTML = esc(updateResultText(u)) + (u.newer && u.url ? ` <a href="${esc(u.url)}" target="_blank" rel="noopener">公開ページを開く</a>` : '')
+      + (u.newer && u.canApply ? ' <button id="btn-upd-apply" type="button">更新して再起動</button>' : '');
+    const ap = $('#btn-upd-apply');
+    if (ap) ap.addEventListener('click', () => applyUpdate(u));
   } catch (e) {
     res.textContent = e.message;
   }

@@ -55,7 +55,8 @@ type Config struct {
 	DXReset   string `json:"dxReset"`   // day (毎日 0 時) / hour (毎時 0 分)
 	DXUnit    string `json:"dxUnit"`    // km / mi
 
-	UpdateCheck bool `json:"updateCheck"` // 起動時と 24 時間ごとに新しいバージョンを確認 (試験中・既定オフ)
+	UpdateCheck bool `json:"updateCheck"` // 起動時と 24 時間ごとに新しいバージョンを確認 (既定オフ)
+	UpdateAuto  bool `json:"updateAuto"`  // 新しい版が見つかったら自動でダウンロード・入れ替え・再起動 (既定オフ、UpdateCheck が前提)
 
 	StationExpireMin int    `json:"stationExpireMin"`
 	TrackPoints      int    `json:"trackPoints"`

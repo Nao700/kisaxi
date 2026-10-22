@@ -71,10 +71,11 @@ type App struct {
 	dxPending bool // 新記録をまだ送っていない
 	dxNext    time.Time
 
-	updMu   sync.Mutex
-	upd     *UpdateInfo
-	updNext time.Time
-	updBusy bool
+	updMu       sync.Mutex
+	upd         *UpdateInfo
+	updNext     time.Time
+	updBusy     bool
+	updApplying bool
 }
 
 func NewApp(cfg Config, cfgPath string, logDir string) *App {

@@ -4,7 +4,7 @@ package main
 
 const (
 	softwareName    = "APRSIGate"
-	softwareVersion = "1.0.5"
+	softwareVersion = "1.0.6"
 	developedBy     = "Developed by JR2TTA Nao feat.Claude"
 )
 
@@ -15,6 +15,15 @@ type ChangeEntry struct {
 }
 
 var changelog = []ChangeEntry{
+	{
+		Version: "1.0.6",
+		Date:    "2026-10-22",
+		Changes: []string{
+			"自動更新を追加。画面上部の「新しいバージョン」表示または「このソフトについて」の「更新して再起動」で、新しい版をダウンロードして入れ替え、再起動します",
+			"設定の「更新」にチェック欄「新しいバージョンが見つかったら自動でダウンロードして入れ替え、再起動する」を追加 (既定オフ)。オフのときは確認したときだけ入れ替えます",
+			"ダウンロードしたファイルはチェックサムと実行ファイルの形式を確かめてから入れ替えます。systemd で動かしている場合は終了だけ行い、再起動はサービス側 (Restart=always) に任せます",
+		},
+	},
 	{
 		Version: "1.0.5",
 		Date:    "2026-10-21",
