@@ -49,6 +49,7 @@ chmod +x aprsigate-linux-x64
 - Bluetooth で無線機 (TH-D74 / TH-D75 / TM-D750) とつなぐ場合は、ペアリングしてから `sudo ./scripts/bt-tnc-setup.sh` を実行します。`/dev/rfcomm0` ができ、再起動後も使えるように登録されるので、TNC を「KISS シリアル」、ポートを `/dev/rfcomm0` にします（無線機側は KISS モードにして、データの通信先を Bluetooth に）。やめるときは `sudo ./scripts/bt-tnc-setup.sh --remove`
   - Windows では、ペアリング後に「その他の Bluetooth 設定」→「COM ポート」に出る「発信」側の COM を選びます
 - 別の PC から管理画面を開くときは `-listen 0.0.0.0:8073` を付けて起動します（認証機能はないので、信頼できる LAN 内だけで使ってください）
+- デスクトップのアイコンから起動したい場合（Raspberry Pi OS など）は、`scripts/aprsigate-start.sh` と `scripts/desktop-setup.sh`（あればアイコン用に `assets/kisaxi_app_icon.png` も）を実行ファイルと同じフォルダに置き、一度だけ `bash desktop-setup.sh` を実行します。デスクトップとメニューの「インターネット」に KISAXI のアイコンができ、ダブルクリックで端末の画面つきで起動します（止めるときはその画面で `Ctrl+C` か画面を閉じる）。機種に合う実行ファイルは自動で選ばれ、すでに動いている（systemd で常駐中など）ときは管理画面だけを開きます。ファイルマネージャーで「実行しますか」と聞かれたら「実行」を選びます。消すときは `bash desktop-setup.sh --remove`
 
 systemd で常駐させる例 (`/etc/systemd/system/aprsigate.service`、「ユーザー名」は実行するユーザーに置き換え。いまの Raspberry Pi OS には `pi` ユーザーがありません):
 
@@ -117,6 +118,8 @@ Go 1.26 以降が必要です。`tools\go` にポータブル版の Go が入っ
 | `src/web.go` | REST API と Server-Sent Events |
 | `src/web/` | 管理画面（Leaflet + OpenStreetMap） |
 | `scripts/bt-tnc-setup.sh` | Bluetooth 無線機を `/dev/rfcommN` として使えるようにする (Linux) |
+| `scripts/aprsigate-start.sh` | ダブルクリック起動用のスクリプト。機種に合う実行ファイルを選んで起動する (Linux) |
+| `scripts/desktop-setup.sh` | デスクトップとメニューに起動アイコンを作る (Linux) |
 
 ## クレジット
 
