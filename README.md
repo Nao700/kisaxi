@@ -45,7 +45,13 @@ chmod +x aprsigate-linux-x64
   - Pi 3 / 4、Zero 2 W の 32bit OS: `aprsigate-linux-armv7`
   - Pi Zero / Zero W: `aprsigate-linux-armv6`（armv7 版は動きません）。CPU が非力なため動作が不安定になる可能性があり、使用はおすすめしません
 - シリアル TNC を使う場合は、実行ユーザーを `dialout` グループに追加してください: `sudo usermod -aG dialout $USER`
-- 別の PC から管理画面を開くときは `-listen 0.0.0.0:8073` を付けて起動します（認証機能はないので、信頼できる LAN 内だけで使ってください）
+- 同じ LAN の別の PC やスマホから管理画面を開くとき（認証機能はないので、信頼できる LAN 内だけで使ってください）
+  - **Tailscale の利用をおすすめします。** Pi で `sudo tailscale serve --bg 8073` を実行すれば、待ち受けを変えずに、Tailscale を入れた端末だけから家の中でも外出先でも `https://<Piの名前>.<tailnet名>.ts.net/` で安全に開けます。下の方法は Tailscale を使えないときの代わりです
+  1. `-listen 0.0.0.0:8073` を付けて起動します（例: `./aprsigate-linux-arm64 -nobrowser -listen 0.0.0.0:8073`）。毎回付ける代わりに、止めた状態で `aprsigate.json` の `httpListen` を `"0.0.0.0:8073"` にしても同じです
+  2. Pi などで `hostname -I` を実行し、先頭のアドレス（例: `192.168.1.20`）を確かめます
+  3. 別の端末のブラウザで `http://192.168.1.20:8073/` を開きます。IP アドレスで開けば設定の保存もできます
+  - Raspberry Pi OS は標準ではファイアウォールがありません。ufw を入れている場合は `sudo ufw allow 8073/tcp` を実行します
+  - 管理画面には APRS-IS のパスコードも表示され、同じ LAN の誰でも開けてしまいます
 
 systemd で常駐させる例 (`/etc/systemd/system/aprsigate.service`、「ユーザー名」は実行するユーザーに置き換え。いまの Raspberry Pi OS には `pi` ユーザーがありません):
 
