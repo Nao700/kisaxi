@@ -209,6 +209,28 @@ func (a *App) Handler(static fs.FS) http.Handler {
 		})
 	})
 
+	// 更新の今すぐ確認 (設定で自動確認がオフでも使える)
+	mux.HandleFunc("/api/update/check", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || !sameOrigin(r) {
+			writeErr(w, http.StatusForbidden, "forbidden")
+			return
+		}
+		writeJSON(w, a.CheckUpdate(r.Context()))
+	})
+
+	// 見つかった新しい版をダウンロードして入れ替え、再起動する
+	mux.HandleFunc("/api/update/apply", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || !sameOrigin(r) {
+			writeErr(w, http.StatusForbidden, "forbidden")
+			return
+		}
+		if err := a.ApplyUpdate(r.Context()); err != nil {
+			writeErr(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		writeJSON(w, map[string]bool{"ok": true})
+	})
+
 	mux.HandleFunc("/api/serialports", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, listSerialPorts())
 	})

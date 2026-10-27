@@ -19,6 +19,7 @@ APRS I-Gate ソフトウェアです。地図には OpenStreetMap を使いま�
 - **局リスト**: 検索、RF / IS での絞り込み、距離表示。クリックで地図上へ移動
 - **パケットモニター**: RF受信 / IS受信 / 送信 / ゲートを色分けし、絞り込みも可能
 - **メッセージ**: 送受信、ACK の自動返信、再送（最大 5 回）
+- **更新**: 設定の「更新」で、新しい版の確認と自動入れ替え（チェック欄でオン・オフ、既定オフ）に対応。オフのときも画面上部の表示から手動で更新できる。systemd で動かすときは `Restart=always` にしておくと更新後に自動で立ち上がる
 - **ログ**: `logs/YYYYMMDD.log` に日別保存
 
 ## 使い方
@@ -45,6 +46,8 @@ chmod +x aprsigate-linux-x64
   - Pi 3 / 4、Zero 2 W の 32bit OS: `aprsigate-linux-armv7`
   - Pi Zero / Zero W: `aprsigate-linux-armv6`（armv7 版は動きません）。CPU が非力なため動作が不安定になる可能性があり、使用はおすすめしません
 - シリアル TNC を使う場合は、実行ユーザーを `dialout` グループに追加してください: `sudo usermod -aG dialout $USER`
+- Bluetooth で無線機 (TH-D74 / TH-D75 / TM-D750) とつなぐ場合は、ペアリングしてから `sudo ./scripts/bt-tnc-setup.sh` を実行します。`/dev/rfcomm0` ができ、再起動後も使えるように登録されるので、TNC を「KISS シリアル」、ポートを `/dev/rfcomm0` にします（無線機側は KISS モードにして、データの通信先を Bluetooth に）。やめるときは `sudo ./scripts/bt-tnc-setup.sh --remove`
+  - Windows では、ペアリング後に「その他の Bluetooth 設定」→「COM ポート」に出る「発信」側の COM を選びます
 - 同じ LAN の別の PC やスマホから管理画面を開くとき（認証機能はないので、信頼できる LAN 内だけで使ってください）
   - **Tailscale の利用をおすすめします。** Pi で `sudo tailscale serve --bg 8073` を実行すれば、待ち受けを変えずに、Tailscale を入れた端末だけから家の中でも外出先でも `https://<Piの名前>.<tailnet名>.ts.net/` で安全に開けます。下の方法は Tailscale を使えないときの代わりです
   1. `-listen 0.0.0.0:8073` を付けて起動します（例: `./aprsigate-linux-arm64 -nobrowser -listen 0.0.0.0:8073`）。毎回付ける代わりに、止めた状態で `aprsigate.json` の `httpListen` を `"0.0.0.0:8073"` にしても同じです
@@ -52,6 +55,7 @@ chmod +x aprsigate-linux-x64
   3. 別の端末のブラウザで `http://192.168.1.20:8073/` を開きます。IP アドレスで開けば設定の保存もできます
   - Raspberry Pi OS は標準ではファイアウォールがありません。ufw を入れている場合は `sudo ufw allow 8073/tcp` を実行します
   - 管理画面には APRS-IS のパスコードも表示され、同じ LAN の誰でも開けてしまいます
+- デスクトップのアイコンから起動したい場合（Raspberry Pi OS など）は、`scripts/aprsigate-start.sh` と `scripts/desktop-setup.sh`（あればアイコン用に `assets/kisaxi_app_icon.png` も）を実行ファイルと同じフォルダに置き、一度だけ `bash desktop-setup.sh` を実行します。デスクトップとメニューの「インターネット」に KISAXI のアイコンができ、ダブルクリックで端末の画面つきで起動します（止めるときはその画面で `Ctrl+C` か画面を閉じる）。機種に合う実行ファイルは自動で選ばれ、すでに動いている（systemd で常駐中など）ときは管理画面だけを開きます。ファイルマネージャーで「実行しますか」と聞かれたら「実行」を選びます。消すときは `bash desktop-setup.sh --remove`
 
 systemd で常駐させる例 (`/etc/systemd/system/aprsigate.service`、「ユーザー名」は実行するユーザーに置き換え。いまの Raspberry Pi OS には `pi` ユーザーがありません):
 
@@ -119,6 +123,9 @@ Go 1.26 以降が必要です。`tools\go` にポータブル版の Go が入っ
 | `src/messages.go` | メッセージの ACK と再送 |
 | `src/web.go` | REST API と Server-Sent Events |
 | `src/web/` | 管理画面（Leaflet + OpenStreetMap） |
+| `scripts/bt-tnc-setup.sh` | Bluetooth 無線機を `/dev/rfcommN` として使えるようにする (Linux) |
+| `scripts/aprsigate-start.sh` | ダブルクリック起動用のスクリプト。機種に合う実行ファイルを選んで起動する (Linux) |
+| `scripts/desktop-setup.sh` | デスクトップとメニューに起動アイコンを作る (Linux) |
 
 ## クレジット
 

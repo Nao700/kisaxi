@@ -15,6 +15,8 @@
   <div class="ind" id="ind-is" title="APRS-IS"><span class="dot"></span><span class="lbl">APRS-IS</span></div>
   <div class="ind" id="ind-tnc" title="TNC"><span class="dot"></span><span class="lbl">TNC</span></div>
   <div id="stats"></div>
+  <div id="dx" title="最長距離 (RF 直接受信)"></div>
+  <a id="upd" hidden target="_blank" rel="noopener"></a>
   <div class="spacer"></div>
   <button id="btn-center" title="自局を中心に表示">自局</button>
   <button id="btn-beacon">ビーコン送信</button>
@@ -185,6 +187,30 @@
         </fieldset>
 
         <fieldset>
+          <legend>出力・アンテナ (PHG)</legend>
+          <label class="chk"><input type="checkbox" name="phgEnabled"> ビーコンに PHG (出力・アンテナ高・利得・指向) を付ける</label>
+          <div class="row">
+            <label>送信出力 (W) <input name="phgPower" type="number" min="0" step="any" class="w5"></label>
+            <label>アンテナ高 (m) <input name="phgHeight" type="number" min="0" step="any" class="w5"></label>
+            <label>利得 (dBi) <input name="phgGain" type="number" min="0" max="9" step="any" class="w5"></label>
+          </div>
+          <label>指向 <select name="phgDir">
+            <option value="0">無指向</option>
+            <option value="45">北東 (45°)</option>
+            <option value="90">東 (90°)</option>
+            <option value="135">南東 (135°)</option>
+            <option value="180">南 (180°)</option>
+            <option value="225">南西 (225°)</option>
+            <option value="270">西 (270°)</option>
+            <option value="315">北西 (315°)</option>
+            <option value="360">北 (360°)</option>
+          </select></label>
+          <label class="chk"><input type="checkbox" name="phgRangeMap"> 地図に通達範囲を表示</label>
+          <p id="phg-preview"></p>
+          <p class="hint">アンテナ高は海抜ではなく、周囲の平均的な地表からの高さ (HAAT) です。各値は PHG の 1 桁コードに丸めて送ります (出力 0/1/4/9/16/25/36/49/64/81 W、高さ 10×2ⁿ ft)。通達範囲は APRS 規格の目安の式で計算した値で、指向性アンテナでも円で表示します。PHG を付けるとコメントは 36 文字までです。</p>
+        </fieldset>
+
+        <fieldset>
           <legend>APRS-IS</legend>
           <label class="chk"><input type="checkbox" name="isEnabled"> APRS-IS に接続する</label>
           <label>サーバー <input name="isServer" placeholder="rotate.aprs2.net:14580"></label>
@@ -246,11 +272,35 @@
             <label class="chk"><input type="checkbox" name="beaconRf"> RF ビーコン</label>
             <label>間隔 (分) <input name="beaconRfMin" type="number" min="5"></label>
           </div>
-          <label>RF 送信パス <input name="beaconRfPath" placeholder="WIDE1-1"></label>
+          <label>RF 送信パス <input name="beaconRfPath" placeholder="空欄で直接送信"></label>
           <div class="row">
             <label class="chk"><input type="checkbox" name="beaconIs"> APRS-IS ビーコン</label>
             <label>間隔 (分) <input name="beaconIsMin" type="number" min="5"></label>
           </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>最長距離 (DX)</legend>
+          <label class="chk"><input type="checkbox" name="dxEnabled"> 最長距離を更新したらステータスを APRS-IS に送信 (aprs.fi のステータス欄に表示)</label>
+          <label class="chk"><input type="checkbox" name="dxRf"> RF にも送信 (ビーコンの RF 送信パスを使用)</label>
+          <div class="row">
+            <label>リセット <select name="dxReset">
+              <option value="day">毎日 24 時</option>
+              <option value="hour">毎時 0 分</option>
+            </select></label>
+            <label>距離の単位 <select name="dxUnit">
+              <option value="km">km</option>
+              <option value="mi">mi (マイル)</option>
+            </select></label>
+          </div>
+          <p class="hint">RF で直接受信した局 (デジピート経由・オブジェクト・位置あいまいを除く) のうち、自局から最も遠い局を記録し「DX: JJ2YKR-2 35.29.80N 137.15.28E 46.8 km 80deg 08:20」の形で送ります。送信は最短 10 分間隔で、その間に記録が伸びたら 10 分後に最新を送ります。</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>更新</legend>
+          <label class="chk"><input type="checkbox" name="updateCheck"> 新しいバージョンが公開されたら知らせる (起動時と 24 時間ごとに確認)</label>
+          <label class="chk"><input type="checkbox" name="updateAuto"> 新しいバージョンが見つかったら自動でダウンロードして入れ替え、再起動する (上の確認がオンのとき有効)</label>
+          <p class="hint">公開ページ (GitHub の kisaxi-release) の最新リリースを確認し、新しい版があれば画面上部に表示します。自動更新をオフにしている間は、画面上部の表示か「このソフトについて」の「更新して再起動」を押したときだけ入れ替えます。入れ替え中は TNC・APRS-IS が一時的に切れます。「今すぐ更新を確認」は設定に関係なく使えます。</p>
         </fieldset>
 
         <fieldset>
@@ -277,6 +327,7 @@
         <h2>APRS I-Gate</h2>
         <p class="ver">バージョン <span id="about-version"></span></p>
         <p class="credit" id="about-credit"></p>
+        <p class="upd-check"><button id="btn-upd-check" type="button">今すぐ更新を確認</button> <span id="upd-result"></span></p>
         <h3>変更履歴</h3>
         <div id="about-changelog"></div>
         <h3>使用しているもの</h3>

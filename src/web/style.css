@@ -76,6 +76,11 @@ button.small { padding: 2px 8px; font-size: 12px; }
 .ind.bad .dot { background: var(--bad); }
 .ind.ok { color: var(--text); }
 #stats { color: var(--muted); font-size: 12px; }
+#dx { color: var(--muted); font-size: 12px; }
+#dx.has { color: var(--text); cursor: pointer; }
+#dx.has:hover { color: var(--accent); }
+#upd { color: var(--warn); font-size: 12px; font-weight: 600; }
+#upd[hidden] { display: none; }
 .spacer { flex: 1; }
 
 #offline { background: var(--bad); color: #fff; padding: 6px 12px; font-weight: 600; }
@@ -167,6 +172,7 @@ main { flex: 1; display: flex; min-height: 0; }
 .about h3 { margin: 18px 0 6px; font-size: 14px; border-bottom: 1px solid var(--border); padding-bottom: 3px; }
 .about .ver { margin: 4px 0 0; font-size: 14px; }
 .about .credit { margin: 8px 0 0; font-weight: 600; }
+.about .upd-check { margin: 10px 0 0; font-size: 13px; }
 .about .rel { margin-bottom: 10px; }
 .about .rel b { font-size: 13px; }
 .about .rel .date { color: var(--muted); margin-left: 8px; font-size: 12px; }
@@ -182,6 +188,7 @@ legend { font-weight: 600; padding: 0 4px; }
 .settings .row { display: flex; gap: 10px; align-items: flex-end; }
 .settings .row > label { flex: 1; }
 .settings input.w3 { width: 3.5em; }
+.settings input.w5 { width: 5.5em; }
 #btn-pickpos { margin-top: 6px; }
 #btn-pickpos.active, #obj-pick.active { background: var(--accent); color: #fff; }
 /* 日本語フォントではバックスラッシュが「¥」に見えるため、英数字専用の欄は英字フォントにする */

@@ -456,7 +456,8 @@ func parseMicE(p *Packet) bool {
 	}
 	if n > 0 {
 		p.Ambig = n
-		p.Lat, p.Lon = ambigCenter(lat, n), ambigCenter(lon, n)
+		// Mic-E の経度は桁が伏せられていないので実値のまま使う (範囲の描画は緯度経度が入る格子)
+		p.Lat = ambigCenter(lat, n)
 	}
 	p.HasPos = true
 	if sp >= 0 && crs >= 0 && crs <= 360 {

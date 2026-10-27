@@ -14,6 +14,7 @@ type savedData struct {
 	Saved    int64         `json:"saved"`
 	Stations []*Station    `json:"stations"`
 	Packets  []PacketEvent `json:"packets"`
+	DX       *DXRecord     `json:"dx,omitempty"`
 }
 
 func (a *App) dataPath() string {
@@ -28,7 +29,7 @@ func (a *App) retention() time.Duration {
 func (a *App) SaveData() {
 	a.saveMu.Lock()
 	defer a.saveMu.Unlock()
-	d := savedData{Saved: time.Now().UnixMilli(), Stations: a.db.All(), Packets: a.recent.All()}
+	d := savedData{Saved: time.Now().UnixMilli(), Stations: a.db.All(), Packets: a.recent.All(), DX: a.DX()}
 	b, err := json.Marshal(d)
 	if err != nil {
 		log.Printf("受信データの保存に失敗しました: %v", err)
@@ -66,6 +67,11 @@ func (a *App) LoadData() {
 			a.recent.Add(p)
 			np++
 		}
+	}
+	if d.DX != nil && d.DX.Period == dxPeriod(now, a.Config().DXReset) {
+		a.dxMu.Lock()
+		a.dx = d.DX // 同じ期間内の記録だけ引き継ぐ (送信済みとみなす)
+		a.dxMu.Unlock()
 	}
 	if n > 0 || np > 0 {
 		log.Printf("前回の受信データを復元しました (局 %d / パケット %d)", n, np)

@@ -82,6 +82,7 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 L.control.scale({ imperial: false }).addTo(map);
 const trackLayer = L.layerGroup().addTo(map);
 const ambigLayer = L.layerGroup().addTo(map);
+const rangeLayer = L.layerGroup().addTo(map);
 const markerLayer = L.layerGroup().addTo(map);
 // 位置曖昧さレベル 1〜4 の範囲の一辺 (度): 0.1分 / 1分 / 10分 / 1度
 const AMBIG_DEG = [0, 0.1 / 60, 1 / 60, 10 / 60, 1];
@@ -142,7 +143,7 @@ function popupHTML(s) {
   const rows = [];
   const add = (k, v) => { if (v !== '' && v != null) rows.push(`<tr><td>${k}</td><td>${v}</td></tr>`); };
   if (s.object) add(s.type === 'item' ? 'アイテム' : 'オブジェクト', '送信元 ' + esc(s.owner) + (s.killed ? ' (削除)' : ''));
-  add('位置', `${s.lat.toFixed(5)}, ${s.lon.toFixed(5)}`);
+  add('位置', fmtDM(s.lat, 'NS') + ' ' + fmtDM(s.lon, 'EW'));
   if (cfg.lat || cfg.lon) {
     const d = distKm(cfg.lat, cfg.lon, s.lat, s.lon);
     add('距離/方位', `${d.toFixed(1)} km / ${Math.round(bearing(cfg.lat, cfg.lon, s.lat, s.lon))}°`);
@@ -190,6 +191,7 @@ function drawStation(call) {
   }
   e.iconKey = iconKey;
   if (s.ambig) {
+    // マーカー (範囲の中心) を中心に、曖昧さレベルの一辺で描く
     const h = AMBIG_DEG[s.ambig] / 2;
     const b = [[s.lat - h, s.lon - h], [s.lat + h, s.lon + h]];
     if (e.ambig) e.ambig.setBounds(b);
@@ -405,6 +407,11 @@ let objDirty = false;
 let objPicking = false;
 const objLayer = L.layerGroup();
 
+// 35°05.59' N 136°55.08' E 形式 (aprs.fi と同じ度分表記)
+function fmtDM(v, hemi) {
+  const t = Math.round(Math.abs(v) * 6000);
+  return `${Math.floor(t / 6000)}°${String(Math.floor(t % 6000 / 100)).padStart(2, '0')}.${String(t % 100).padStart(2, '0')}' ${hemi[v < 0 ? 1 : 0]}`;
+}
 function fmtLat(v) { const h = v < 0 ? 'S' : 'N'; const t = Math.round(Math.abs(v) * 6000); return `${String(Math.floor(t / 6000)).padStart(2, '0')}${String(Math.floor(t % 6000 / 100)).padStart(2, '0')}.${String(t % 100).padStart(2, '0')}${h}`; }
 function fmtLon(v) { const h = v < 0 ? 'W' : 'E'; const t = Math.round(Math.abs(v) * 6000); return `${String(Math.floor(t / 6000)).padStart(3, '0')}${String(Math.floor(t % 6000 / 100)).padStart(2, '0')}.${String(t % 100).padStart(2, '0')}${h}`; }
 function zulu() { const d = new Date(); const p = n => String(n).padStart(2, '0'); return p(d.getUTCDate()) + p(d.getUTCHours()) + p(d.getUTCMinutes()) + 'z'; }
@@ -649,7 +656,7 @@ async function loadAbout() {
 }
 
 // ---------- 設定 ----------
-const numFields = ['lat', 'lon', 'baud', 'txDelayMs', 'localHeardMin', 'maxIsToRfPerMin', 'beaconRfMin', 'beaconIsMin', 'stationExpireMin', 'trackPoints'];
+const numFields = ['lat', 'lon', 'phgPower', 'phgHeight', 'phgGain', 'phgDir', 'baud', 'txDelayMs', 'localHeardMin', 'maxIsToRfPerMin', 'beaconRfMin', 'beaconIsMin', 'stationExpireMin', 'trackPoints'];
 function fillForm() {
   const f = $('#cfg-form');
   for (const el of f.elements) {
@@ -659,6 +666,7 @@ function fillForm() {
   }
   updateTncFields();
   updateSymPreview();
+  updatePhgPreview();
 }
 function readForm() {
   const f = $('#cfg-form');
@@ -680,6 +688,32 @@ function updateSymPreview() {
   const f = $('#cfg-form');
   $('#sym-preview').innerHTML = symHTML((f.symbolTable.value || '/') + (f.symbol.value || '/'));
 }
+// PHG コード (src/phg.go の phgCode と同じ丸め) と通達範囲 (km)。range(mi) = sqrt(2 * H(ft) * sqrt(P/10 * G/2))
+function phgInfo(powerW, heightM, gainDB, dir) {
+  const digit = v => Math.min(9, Math.max(0, Math.round(v)));
+  const p = digit(Math.sqrt(Math.max(powerW, 0)));
+  const ft = heightM / 0.3048;
+  const h = ft > 10 ? digit(Math.log2(ft / 10)) : 0;
+  const g = digit(gainDB);
+  const d = dir > 0 ? Math.min(8, Math.max(1, Math.floor((dir + 22) / 45))) : 0;
+  const hft = 10 * 2 ** h;
+  const km = Math.sqrt(2 * hft * Math.sqrt((p * p) / 10 * (10 ** (g / 10)) / 2)) * 1.609344;
+  return { code: `PHG${p}${h}${g}${d}`, km, w: p * p, m: hft * 0.3048, g, dir: d * 45 };
+}
+function updatePhgPreview() {
+  const f = $('#cfg-form');
+  const r = phgInfo(Number(f.phgPower.value) || 0, Number(f.phgHeight.value) || 0, Number(f.phgGain.value) || 0, Number(f.phgDir.value) || 0);
+  $('#phg-preview').textContent = `${r.code} → 通達範囲 約 ${r.km.toFixed(1)} km (送信される値: ${r.w} W / ${r.m.toFixed(1)} m / ${r.g} dBi / ${r.dir ? r.dir + '°' : '無指向'})`;
+}
+function updateRangeCircle() {
+  rangeLayer.clearLayers();
+  if (!cfg.phgEnabled || !cfg.phgRangeMap || !(cfg.lat || cfg.lon)) return;
+  const r = phgInfo(cfg.phgPower, cfg.phgHeight, cfg.phgGain, cfg.phgDir);
+  if (r.km <= 0) return;
+  L.circle([cfg.lat, cfg.lon], { radius: r.km * 1000, color: '#2a7de1', weight: 1.5, dashArray: '6 4', fillColor: '#2a7de1', fillOpacity: 0.06, interactive: false }).addTo(rangeLayer);
+}
+for (const n of ['phgPower', 'phgHeight', 'phgGain']) $('#cfg-form')[n].addEventListener('input', updatePhgPreview);
+$('#cfg-form').phgDir.addEventListener('change', updatePhgPreview);
 $('#cfg-form').tncType.addEventListener('change', updateTncFields);
 $('#cfg-form').symbolTable.addEventListener('input', updateSymPreview);
 $('#cfg-form').symbol.addEventListener('input', updateSymPreview);
@@ -708,6 +742,7 @@ $('#cfg-form').addEventListener('submit', async ev => {
 function applyConfigUI() {
   $('#mycall').textContent = cfg.callsign || '(未設定)';
   listDirty = true;
+  updateRangeCircle();
 }
 
 // ---------- ステータス ----------
@@ -721,8 +756,75 @@ function renderStatus() {
   ti.className = 'ind ' + (!tnc ? '' : tnc.connected ? 'ok' : 'bad');
   ti.title = !tnc ? 'TNC: 使用しない' : `${tnc.desc} ${tnc.connected ? '接続中' : '切断 ' + (tnc.error || '')}`;
   const s = status.stats || {};
+  renderDX();
+  renderUpdate();
   $('#stats').textContent = `RF受信 ${s.rfRx || 0} / IS受信 ${s.isRx || 0} / RF→IS ${s.rfToIs || 0} / IS→RF ${s.isToRf || 0} / デジ ${s.digi || 0} / 送信 RF ${s.txRf || 0}・IS ${s.txIs || 0}`;
 }
+
+function renderDX() {
+  const r = status.dx, el = $('#dx');
+  if (!r) {
+    el.textContent = 'DX: なし';
+    el.classList.remove('has');
+    el.title = '最長距離 (RF 直接受信): まだ記録なし';
+    return;
+  }
+  const d = cfg.dxUnit === 'mi' ? `${(r.km / 1.609344).toFixed(1)} mi` : `${r.km.toFixed(1)} km`;
+  const t = new Date(r.t);
+  el.textContent = `DX: ${r.call} ${d} ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
+  el.classList.add('has');
+  el.title = `${status.dxText}\n(${cfg.dxReset === 'hour' ? '毎時 0 分' : '毎日 24 時'}にリセット・クリックで地図に表示)`;
+}
+function renderUpdate() {
+  const u = status.update, el = $('#upd');
+  el.hidden = !(u && u.newer);
+  if (el.hidden) return;
+  el.textContent = `新しいバージョン Ver.${u.latest} があります`;
+  el.href = u.url || '#';
+  el.title = u.canApply ? 'クリックで更新して再起動します' : 'クリックで公開ページを開きます (この環境用のファイルが見つからないため手動で入れ替えてください)';
+}
+async function applyUpdate(u) {
+  if (!confirm(`Ver.${u.latest} をダウンロードして入れ替え、再起動します。\nTNC・APRS-IS は一時的に切れます。よろしいですか？`)) return;
+  try {
+    await api('/api/update/apply', {});
+    toast('更新しています。まもなく再起動します');
+  } catch (e) {
+    toast(e.message);
+  }
+}
+$('#upd').addEventListener('click', (ev) => {
+  const u = status.update;
+  if (u && u.newer && u.canApply) {
+    ev.preventDefault();
+    applyUpdate(u);
+  }
+});
+function updateResultText(u) {
+  if (u.error) return u.error;
+  if (!u.latest) return 'まだ公開されたリリースはありません';
+  if (u.newer) return `新しいバージョン Ver.${u.latest} があります`;
+  return `最新です (公開中の最新: Ver.${u.latest})`;
+}
+$('#btn-upd-check').addEventListener('click', async () => {
+  const res = $('#upd-result'), btn = $('#btn-upd-check');
+  btn.disabled = true;
+  res.textContent = '確認しています…';
+  try {
+    const u = await api('/api/update/check', {});
+    res.innerHTML = esc(updateResultText(u)) + (u.newer && u.url ? ` <a href="${esc(u.url)}" target="_blank" rel="noopener">公開ページを開く</a>` : '')
+      + (u.newer && u.canApply ? ' <button id="btn-upd-apply" type="button">更新して再起動</button>' : '');
+    const ap = $('#btn-upd-apply');
+    if (ap) ap.addEventListener('click', () => applyUpdate(u));
+  } catch (e) {
+    res.textContent = e.message;
+  }
+  btn.disabled = false;
+});
+
+$('#dx').addEventListener('click', () => {
+  const r = status.dx;
+  if (r) map.setView([r.lat, r.lon], Math.max(map.getZoom(), 11));
+});
 
 $('#btn-beacon').addEventListener('click', async () => {
   try {
