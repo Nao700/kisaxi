@@ -4,7 +4,7 @@ package main
 
 const (
 	softwareName    = "APRSIGate"
-	softwareVersion = "1.0.7"
+	softwareVersion = "1.0.8"
 	developedBy     = "Developed by JR2TTA Nao feat.Claude"
 )
 
@@ -16,7 +16,7 @@ type ChangeEntry struct {
 
 var changelog = []ChangeEntry{
 	{
-		Version: "1.0.7",
+		Version: "1.0.8",
 		Date:    "2026-10-29",
 		Changes: []string{
 			"ウェザーステーション (Davis) に対応。Vantage Pro2 / Vue のコンソールにつないだ USB・シリアルのデータロガー、または WeatherLinkIP から約 2 秒ごとに現在値 (気温・湿度・気圧・風向・風速・雨量・日射) を読み取ります。設定の「ウェザーステーション (Davis)」で有効にします",
