@@ -309,7 +309,16 @@
             <label>受信データの保持時間 (分) <input name="stationExpireMin" type="number" min="1"></label>
             <label>軌跡の最大点数 <input name="trackPoints" type="number" min="1"></label>
           </div>
+          <div class="row">
+            <label>軌跡の区切り <select name="trackSplit">
+              <option value="day">日付が変わったら</option>
+              <option value="gap">一定時間あいたら</option>
+              <option value="none">区切らない</option>
+            </select></label>
+            <label class="track-gap">間隔 (分) <input name="trackGapMin" type="number" min="1"></label>
+          </div>
           <p class="hint">RF・APRS-IS で受信した局とパケットをこの時間保持します。アプリを再起動しても引き継がれます (既定 60 分)。</p>
+          <p class="hint">軌跡は区切りのところで線を切って描きます。受信範囲の外に出て戻ってきた局などで、離れた点どうしが直線で結ばれるのを防ぎます (既定は日付が変わったら)。</p>
           <label class="chk"><input type="checkbox" name="logPackets"> パケットをログファイル (logs フォルダ) に保存</label>
           <label>Web UI 待ち受け (再起動後に有効) <input name="httpListen" placeholder="127.0.0.1:8073"></label>
           <label class="chk"><input type="checkbox" name="openBrowser"> 起動時にブラウザを開く</label>

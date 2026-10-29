@@ -200,14 +200,34 @@ function drawStation(call) {
     ambigLayer.removeLayer(e.ambig);
     e.ambig = null;
   }
-  const pts = (s.track || []).map(p => [p[0], p[1]]);
-  if ($('#opt-tracks').checked && pts.length > 1) {
-    if (e.track) e.track.setLatLngs(pts);
-    else e.track = L.polyline(pts, { color: s.lastRf ? '#0b7a3e' : '#3557b7', weight: 2, opacity: 0.7 }).addTo(trackLayer);
+  const segs = trackSegments(s.track || []);
+  if ($('#opt-tracks').checked && segs.length) {
+    if (e.track) e.track.setLatLngs(segs);
+    else e.track = L.polyline(segs, { color: s.lastRf ? '#0b7a3e' : '#3557b7', weight: 2, opacity: 0.7 }).addTo(trackLayer);
   } else if (e.track) {
     trackLayer.removeLayer(e.track);
     e.track = null;
   }
+}
+
+// 軌跡を設定の区切り (日付が変わったら / 一定時間あいたら) で分け、2 点以上ある区間だけを返す
+function trackSegments(track) {
+  const mode = cfg.trackSplit || 'day';
+  const gap = (cfg.trackGapMin || 30) * 60;
+  const segs = [];
+  let cur = [], prev = null;
+  for (const p of track) {
+    if (prev) {
+      const brk = mode === 'gap' ? p[2] - prev[2] >= gap
+        : mode === 'day' ? new Date(p[2] * 1000).toDateString() !== new Date(prev[2] * 1000).toDateString()
+        : false;
+      if (brk) { if (cur.length > 1) segs.push(cur); cur = []; }
+    }
+    cur.push([p[0], p[1]]);
+    prev = p;
+  }
+  if (cur.length > 1) segs.push(cur);
+  return segs;
 }
 
 function upsertStation(s) {
@@ -656,7 +676,7 @@ async function loadAbout() {
 }
 
 // ---------- 設定 ----------
-const numFields = ['lat', 'lon', 'phgPower', 'phgHeight', 'phgGain', 'phgDir', 'baud', 'txDelayMs', 'localHeardMin', 'maxIsToRfPerMin', 'beaconRfMin', 'beaconIsMin', 'stationExpireMin', 'trackPoints'];
+const numFields = ['lat', 'lon', 'phgPower', 'phgHeight', 'phgGain', 'phgDir', 'baud', 'txDelayMs', 'localHeardMin', 'maxIsToRfPerMin', 'beaconRfMin', 'beaconIsMin', 'stationExpireMin', 'trackPoints', 'trackGapMin'];
 function fillForm() {
   const f = $('#cfg-form');
   for (const el of f.elements) {
@@ -665,6 +685,7 @@ function fillForm() {
     else el.value = cfg[el.name];
   }
   updateTncFields();
+  updateTrackFields();
   updateSymPreview();
   updatePhgPreview();
 }
@@ -683,6 +704,9 @@ function updateTncFields() {
   const t = $('#cfg-form').tncType.value;
   $$('.tnc-serial').forEach(e => (e.style.display = t === 'kiss-serial' ? '' : 'none'));
   $$('.tnc-tcp').forEach(e => (e.style.display = t === 'kiss-tcp' ? '' : 'none'));
+}
+function updateTrackFields() {
+  $$('.track-gap').forEach(e => (e.style.display = $('#cfg-form').trackSplit.value === 'gap' ? '' : 'none'));
 }
 function updateSymPreview() {
   const f = $('#cfg-form');
@@ -715,6 +739,7 @@ function updateRangeCircle() {
 for (const n of ['phgPower', 'phgHeight', 'phgGain']) $('#cfg-form')[n].addEventListener('input', updatePhgPreview);
 $('#cfg-form').phgDir.addEventListener('change', updatePhgPreview);
 $('#cfg-form').tncType.addEventListener('change', updateTncFields);
+$('#cfg-form').trackSplit.addEventListener('change', updateTrackFields);
 $('#cfg-form').symbolTable.addEventListener('input', updateSymPreview);
 $('#cfg-form').symbol.addEventListener('input', updateSymPreview);
 $('#btn-pickpos').addEventListener('click', () => setPickMode(!pickMode));
@@ -743,6 +768,7 @@ function applyConfigUI() {
   $('#mycall').textContent = cfg.callsign || '(未設定)';
   listDirty = true;
   updateRangeCircle();
+  for (const k of stations.keys()) drawStation(k);
 }
 
 // ---------- ステータス ----------

@@ -4,7 +4,7 @@ package main
 
 const (
 	softwareName    = "APRSIGate"
-	softwareVersion = "1.0.6"
+	softwareVersion = "1.0.7"
 	developedBy     = "Developed by JR2TTA Nao feat.Claude"
 )
 
@@ -15,6 +15,14 @@ type ChangeEntry struct {
 }
 
 var changelog = []ChangeEntry{
+	{
+		Version: "1.0.7",
+		Date:    "2026-10-29",
+		Changes: []string{
+			"地図の軌跡を日付が変わったところで区切って描くよう変更。受信範囲 (APRS-IS フィルタ) の外に出て別の日に戻ってきた局が、離れた点どうしの直線で何本も結ばれて扇形になる問題を修正",
+			"設定の「その他」に「軌跡の区切り」を追加。日付が変わったら (既定) / 一定時間あいたら (間隔を分で指定) / 区切らない から選べます",
+		},
+	},
 	{
 		Version: "1.0.6",
 		Date:    "2026-10-22",

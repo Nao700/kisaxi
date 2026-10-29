@@ -60,6 +60,8 @@ type Config struct {
 
 	StationExpireMin int    `json:"stationExpireMin"`
 	TrackPoints      int    `json:"trackPoints"`
+	TrackSplit       string `json:"trackSplit"`  // 軌跡の区切り: day (日付が変わったら) / gap (TrackGapMin 分あいたら) / none
+	TrackGapMin      int    `json:"trackGapMin"` // TrackSplit=gap のときの間隔 (分)
 	LogPackets       bool   `json:"logPackets"`
 	HTTPListen       string `json:"httpListen"`
 	OpenBrowser      bool   `json:"openBrowser"`
@@ -105,6 +107,8 @@ func defaultConfig() Config {
 		UpdateCheck:      false,
 		StationExpireMin: 60,
 		TrackPoints:      300,
+		TrackSplit:       "day",
+		TrackGapMin:      30,
 		LogPackets:       true,
 		HTTPListen:       "127.0.0.1:8073",
 		OpenBrowser:      true,
@@ -147,6 +151,12 @@ func (c *Config) Normalize() {
 	}
 	if c.TrackPoints <= 0 {
 		c.TrackPoints = d.TrackPoints
+	}
+	if c.TrackSplit != "gap" && c.TrackSplit != "none" {
+		c.TrackSplit = "day"
+	}
+	if c.TrackGapMin <= 0 {
+		c.TrackGapMin = d.TrackGapMin
 	}
 	if c.HTTPListen == "" {
 		c.HTTPListen = d.HTTPListen
