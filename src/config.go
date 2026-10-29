@@ -65,8 +65,12 @@ type Config struct {
 
 	StationExpireMin int    `json:"stationExpireMin"`
 	TrackPoints      int    `json:"trackPoints"`
-	TrackSplit       string `json:"trackSplit"`  // 軌跡の区切り: day (日付が変わったら) / gap (TrackGapMin 分あいたら) / none
-	TrackGapMin      int    `json:"trackGapMin"` // TrackSplit=gap のときの間隔 (分)
+	TrackSplit       string `json:"trackSplit"`   // 軌跡の区切り: day (日付が変わったら) / gap (TrackGapMin 分あいたら) / none
+	TrackGapMin      int    `json:"trackGapMin"`  // TrackSplit=gap のときの間隔 (分)
+	SdrWxEnabled     bool   `json:"sdrWxEnabled"` // SDR (rtl_433) で受信した気象センサーを取り込む
+	SdrWxCmd         string `json:"sdrWxCmd"`     // 起動するコマンド (空なら rtl_433 -f 433.92M -F json)
+	SdrWxDevice      string `json:"sdrWxDevice"`  // 地図に出すセンサー (model/id[/ch])
+	SdrWxCall        string `json:"sdrWxCall"`    // 気象局のコール (空なら自局コール-13)
 	LogPackets       bool   `json:"logPackets"`
 	HTTPListen       string `json:"httpListen"`
 	OpenBrowser      bool   `json:"openBrowser"`

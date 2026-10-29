@@ -4,7 +4,7 @@ package main
 
 const (
 	softwareName    = "APRSIGate"
-	softwareVersion = "1.0.7"
+	softwareVersion = "1.0.8"
 	developedBy     = "Developed by JR2TTA Nao feat.Claude"
 )
 
@@ -15,6 +15,13 @@ type ChangeEntry struct {
 }
 
 var changelog = []ChangeEntry{
+	{
+		Version: "1.0.8",
+		Date:    "2026-11-02",
+		Changes: []string{
+			"SDR で受信した気象センサーの取り込みを試験的に追加。rtl_433 (別途インストール) を起動して JSON を読み、気温・湿度・風・雨量などを地図の気象局として表示します (設定の「SDR 気象センサー」)。APRS への送信はまだしません",
+		},
+	},
 	{
 		Version: "1.0.7",
 		Date:    "2026-10-29",

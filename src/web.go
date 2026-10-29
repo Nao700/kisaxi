@@ -239,6 +239,12 @@ func (a *App) Handler(static fs.FS) http.Handler {
 		}
 		writeJSON(w, out)
 	})
+
+	mux.HandleFunc("/api/sdrwx", func(w http.ResponseWriter, r *http.Request) {
+		cfg := a.Config()
+		writeJSON(w, map[string]any{"status": a.sdr.Status(cfg.SdrWxEnabled), "devices": a.sdr.Devices(), "call": sdrWxCall(cfg)})
+	})
+
 	mux.HandleFunc("/api/serialports", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, listSerialPorts())
 	})

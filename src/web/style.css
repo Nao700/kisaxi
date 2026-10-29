@@ -311,3 +311,5 @@ body.nolabels .stn-icon .label { display: none; }
   .settings .row > label { min-width: 8em; }
   #toast { bottom: 76px; max-width: calc(100vw - 32px); }
 }
+.sdr-table { border-collapse: collapse; margin-top: 6px; font-size: 12px; }
+.sdr-table th, .sdr-table td { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--border, #ddd); }

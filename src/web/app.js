@@ -675,6 +675,28 @@ async function loadAbout() {
   }
 }
 
+// ---------- SDR 気象センサー ----------
+const fmtN = (v, u, d = 1) => (v == null ? '-' : v.toFixed(d) + u);
+async function loadSdr() {
+  const box = $('#sdr-list');
+  try {
+    const r = await api('/api/sdrwx');
+    const st = r.status;
+    const head = !st.enabled ? '取り込みはオフです。'
+      : st.running ? '受信待ち受け中です。'
+      : `停止中${st.error ? ': ' + esc(st.error) : ''}`;
+    const sel = $('#cfg-form').sdrWxDevice.value;
+    const rows = r.devices.map(d => {
+      const w = d.wx || {};
+      const v = [fmtN(w.temp, '℃'), w.humidity != null ? w.humidity + '%' : '-', fmtN(w.wind, 'm/s'), w.windDir != null ? w.windDir + '°' : '-', fmtN(w.rain24h, 'mm')].join(' / ');
+      return `<tr><td>${esc(d.key)}</td><td>${v}</td><td>${ago(d.last)}前</td><td><button type="button" data-sdr="${esc(d.key)}"${d.key === sel ? ' disabled' : ''}>${d.key === sel ? '選択中' : '使う'}</button></td></tr>`;
+    }).join('');
+    box.innerHTML = `<div>${head}</div>` + (rows ? `<table class="sdr-table"><tr><th>センサー</th><th>気温 / 湿度 / 風 / 風向 / 24h 雨量</th><th>最終受信</th><th></th></tr>${rows}</table>` : '');
+    box.querySelectorAll('button[data-sdr]').forEach(b => (b.onclick = () => { $('#cfg-form').sdrWxDevice.value = b.dataset.sdr; loadSdr(); }));
+  } catch { /* 無視 */ }
+}
+setInterval(() => { if ($('#tab-settings').classList.contains('active')) loadSdr(); }, 5000);
+
 // ---------- 設定 ----------
 const numFields = ['lat', 'lon', 'phgPower', 'phgHeight', 'phgGain', 'phgDir', 'baud', 'txDelayMs', 'localHeardMin', 'maxIsToRfPerMin', 'beaconRfMin', 'beaconIsMin', 'stationExpireMin', 'trackPoints', 'trackGapMin'];
 function fillForm() {
@@ -686,6 +708,7 @@ function fillForm() {
   }
   updateTncFields();
   updateTrackFields();
+  loadSdr();
   updateSymPreview();
   updatePhgPreview();
 }

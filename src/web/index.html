@@ -309,6 +309,18 @@
         </fieldset>
 
         <fieldset>
+          <legend>SDR 気象センサー (試験)</legend>
+          <label class="chk"><input type="checkbox" name="sdrWxEnabled"> SDR で受信した気象センサーを取り込む (rtl_433 を起動。保存すると起動し直します)</label>
+          <label>起動コマンド <input name="sdrWxCmd" placeholder="rtl_433 -f 433.92M -F json"></label>
+          <div class="row">
+            <label>地図に出すセンサー <input name="sdrWxDevice" placeholder="下の一覧の「使う」で選択"></label>
+            <label>気象局のコール <input name="sdrWxCall" placeholder="未入力なら 自局コール-13"></label>
+          </div>
+          <div id="sdr-list" class="hint">(受信したセンサーがここに出ます)</div>
+          <p class="hint">rtl_433 (別途インストール) が出す JSON を読み、気温・湿度・風・雨量などを地図の気象局として表示します。近所の機器も受信するので、一覧から自分のセンサーを選んでください。APRS への送信はまだしません。</p>
+        </fieldset>
+
+        <fieldset>
           <legend>更新</legend>
           <label class="chk"><input type="checkbox" name="updateCheck"> 新しいバージョンが公開されたら知らせる (起動時と 24 時間ごとに確認)</label>
           <label class="chk"><input type="checkbox" name="updateAuto"> 新しいバージョンが見つかったら自動でダウンロードして入れ替え、再起動する (上の確認がオンのとき有効)</label>

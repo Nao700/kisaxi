@@ -71,6 +71,8 @@ type App struct {
 	dxPending bool // 新記録をまだ送っていない
 	dxNext    time.Time
 
+	sdr *SdrWx
+
 	updMu       sync.Mutex
 	upd         *UpdateInfo
 	updNext     time.Time
@@ -79,7 +81,7 @@ type App struct {
 }
 
 func NewApp(cfg Config, cfgPath string, logDir string) *App {
-	return &App{
+	a := &App{
 		cfgPath: cfgPath,
 		started: time.Now(),
 		cfg:     cfg,
@@ -92,6 +94,8 @@ func NewApp(cfg Config, cfgPath string, logDir string) *App {
 		rfHeard: map[string]time.Time{},
 		objNext: map[string]time.Time{},
 	}
+	a.sdr = NewSdrWx(a)
+	return a
 }
 
 func (a *App) Config() Config {
@@ -139,6 +143,9 @@ func (a *App) Start() {
 	if cfg.Callsign != "" && cfg.TNCType != "none" {
 		a.tnc = NewTNC(cfg, a.onRFFrame, a.broadcastStatus)
 		a.goRun(a.tnc.Run, ctx)
+	}
+	if cfg.SdrWxEnabled {
+		a.goRun(a.sdr.Run, ctx)
 	}
 	a.mu.Unlock()
 
