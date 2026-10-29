@@ -323,6 +323,7 @@ func (a *App) ApplyUpdate(ctx context.Context) error {
 	go func() {
 		time.Sleep(time.Second) // 画面に結果を返してから
 		a.SaveData()
+		a.SaveWX()
 		restartSelf(exe)
 	}()
 	return nil

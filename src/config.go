@@ -64,6 +64,18 @@ type Config struct {
 	HTTPListen       string `json:"httpListen"`
 	OpenBrowser      bool   `json:"openBrowser"`
 
+	// ウェザーステーション (Davis)。気象データを読み取り、別 SSID で APRS WX として送信する
+	WXEnabled    bool   `json:"wxEnabled"`
+	WXSource     string `json:"wxSource"` // davis-serial (USB / シリアルのロガー), davis-tcp (WeatherLinkIP)
+	WXSerialPort string `json:"wxSerialPort"`
+	WXBaud       int    `json:"wxBaud"`
+	WXTCPAddr    string `json:"wxTcpAddr"`
+	WXCall       string `json:"wxCall"` // WX 局のコールサイン-SSID (空欄なら自局のコールに -13 を付ける)
+	WXIS         bool   `json:"wxIs"`
+	WXISMin      int    `json:"wxIsMin"`
+	WXRF         bool   `json:"wxRf"`
+	WXRFMin      int    `json:"wxRfMin"`
+
 	Objects []ObjectDef `json:"objects"`
 }
 
@@ -103,6 +115,12 @@ func defaultConfig() Config {
 		DXReset:          "day",
 		DXUnit:           "km",
 		UpdateCheck:      false,
+		WXSource:         "davis-serial",
+		WXBaud:           19200,
+		WXIS:             true,
+		WXISMin:          5,
+		WXRF:             false,
+		WXRFMin:          30,
 		StationExpireMin: 60,
 		TrackPoints:      300,
 		LogPackets:       true,
@@ -160,6 +178,21 @@ func (c *Config) Normalize() {
 	if c.DXUnit != "mi" {
 		c.DXUnit = "km"
 	}
+	if c.WXSource != "davis-tcp" {
+		c.WXSource = "davis-serial"
+	}
+	if c.WXBaud <= 0 {
+		c.WXBaud = d.WXBaud
+	}
+	if c.WXISMin < 5 {
+		c.WXISMin = 5
+	}
+	if c.WXRFMin < 5 {
+		c.WXRFMin = 5
+	}
+	c.WXCall = strings.ToUpper(strings.TrimSpace(c.WXCall))
+	c.WXSerialPort = strings.TrimSpace(c.WXSerialPort)
+	c.WXTCPAddr = strings.TrimSpace(c.WXTCPAddr)
 	c.IStoRFPath = strings.ToUpper(strings.TrimSpace(c.IStoRFPath))
 	c.BeaconRFPath = strings.ToUpper(strings.TrimSpace(c.BeaconRFPath))
 }
@@ -182,6 +215,14 @@ func (c *Config) Validate() error {
 		}
 		if strings.HasPrefix(c.Comment, "PHG") {
 			return errors.New("PHG を設定欄で付けるときは、コメント先頭の PHG を削除してください")
+		}
+	}
+	if c.WXCall != "" {
+		if _, err := encodeAddr(c.WXCall, false, false); err != nil {
+			return errors.New("気象局のコールサインが正しくありません (例: JA1XXX-13)")
+		}
+		if c.Callsign != "" && sameCall(c.WXCall, c.Callsign) {
+			return errors.New("気象局のコールサインは自局とは別の SSID にしてください (例: JA1XXX-13)")
 		}
 	}
 	for _, p := range []string{c.IStoRFPath, c.BeaconRFPath} {

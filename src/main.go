@@ -61,6 +61,7 @@ func main() {
 
 	app := NewApp(cfg, path, logDir)
 	app.LoadData()
+	app.LoadWX()
 	app.Start()
 	go app.Loop()
 
@@ -90,6 +91,7 @@ func main() {
 		<-sig
 		fmt.Println("受信データを保存して終了します")
 		app.SaveData()
+		app.SaveWX()
 		os.Exit(0)
 	}()
 	log.Fatal(http.Serve(ln, app.Handler(static)))

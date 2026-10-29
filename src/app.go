@@ -42,6 +42,7 @@ type App struct {
 	cfg    Config
 	is     *ISClient
 	tnc    *TNC
+	davis  *DavisClient
 	cancel context.CancelFunc
 
 	db     *StationDB
@@ -70,6 +71,8 @@ type App struct {
 	dx        *DXRecord
 	dxPending bool // 新記録をまだ送っていない
 	dxNext    time.Time
+
+	wx wxState
 
 	updMu       sync.Mutex
 	upd         *UpdateInfo
@@ -131,7 +134,7 @@ func (a *App) Start() {
 	ctx, cancel := context.WithCancel(context.Background())
 	a.cancel = cancel
 	cfg := a.cfg
-	a.is, a.tnc = nil, nil
+	a.is, a.tnc, a.davis = nil, nil, nil
 	if cfg.Callsign != "" && cfg.ISEnabled {
 		a.is = NewISClient(cfg, a.onISLine, a.broadcastStatus)
 		a.goRun(a.is.Run, ctx)
@@ -139,6 +142,10 @@ func (a *App) Start() {
 	if cfg.Callsign != "" && cfg.TNCType != "none" {
 		a.tnc = NewTNC(cfg, a.onRFFrame, a.broadcastStatus)
 		a.goRun(a.tnc.Run, ctx)
+	}
+	if cfg.WXEnabled {
+		a.davis = NewDavisClient(cfg, a.wxIngest, a.broadcastStatus)
+		a.goRun(a.davis.Run, ctx)
 	}
 	a.mu.Unlock()
 
@@ -158,7 +165,9 @@ func connChanged(o, n Config) bool {
 	return o.Callsign != n.Callsign || o.Passcode != n.Passcode ||
 		o.ISEnabled != n.ISEnabled || o.ISServer != n.ISServer || o.ISFilter != n.ISFilter ||
 		o.TNCType != n.TNCType || o.SerialPort != n.SerialPort || o.Baud != n.Baud ||
-		o.KissTCPAddr != n.KissTCPAddr || o.TNCInit != n.TNCInit || o.TxDelayMs != n.TxDelayMs
+		o.KissTCPAddr != n.KissTCPAddr || o.TNCInit != n.TNCInit || o.TxDelayMs != n.TxDelayMs ||
+		o.WXEnabled != n.WXEnabled || o.WXSource != n.WXSource || o.WXSerialPort != n.WXSerialPort ||
+		o.WXBaud != n.WXBaud || o.WXTCPAddr != n.WXTCPAddr
 }
 
 func (a *App) goRun(run func(context.Context), ctx context.Context) {
@@ -203,6 +212,7 @@ func (a *App) Loop() {
 		a.checkObjects(now)
 		a.retryMessages(now)
 		a.tickDX(now)
+		a.tickWX(now)
 		a.tickUpdate(now)
 		if n%12 == 0 { // 1 分ごと
 			for _, k := range a.db.Expire(a.retention(), now) {
@@ -235,7 +245,7 @@ func (a *App) handleRF(line string) {
 		return
 	}
 	cfg := a.Config()
-	if sameCall(p.Src, cfg.Callsign) {
+	if isOwnCall(p.Src, cfg) {
 		return // 自局の送信がデジピートされて戻ってきたもの
 	}
 	a.hmu.Lock()
@@ -275,7 +285,7 @@ func (a *App) onISLine(line string) {
 			p = ip
 		}
 	}
-	if sameCall(p.Src, cfg.Callsign) {
+	if isOwnCall(p.Src, cfg) {
 		return
 	}
 	a.updateStation(p, "IS")
@@ -613,16 +623,17 @@ func (a *App) emitPacket(dir, line string) {
 }
 
 type StatusInfo struct {
-	Callsign string      `json:"callsign"`
-	Version  string      `json:"version"`
-	Uptime   int64       `json:"uptime"`
-	IS       *ISStatus   `json:"is"`
-	TNC      *TNCStatus  `json:"tnc"`
-	Stats    Stats       `json:"stats"`
-	Stations int         `json:"stations"`
-	DX       *DXRecord   `json:"dx"`
-	DXText   string      `json:"dxText,omitempty"`
-	Update   *UpdateInfo `json:"update,omitempty"`
+	Callsign string       `json:"callsign"`
+	Version  string       `json:"version"`
+	Uptime   int64        `json:"uptime"`
+	IS       *ISStatus    `json:"is"`
+	TNC      *TNCStatus   `json:"tnc"`
+	Stats    Stats        `json:"stats"`
+	Stations int          `json:"stations"`
+	DX       *DXRecord    `json:"dx"`
+	DXText   string       `json:"dxText,omitempty"`
+	Update   *UpdateInfo  `json:"update,omitempty"`
+	Davis    *DavisStatus `json:"davis,omitempty"`
 }
 
 func (a *App) Status() StatusInfo {
@@ -644,6 +655,7 @@ func (a *App) Status() StatusInfo {
 		st.DXText = dxStatusText(*st.DX, a.Config().DXUnit)
 	}
 	st.Update = a.Update()
+	st.Davis = a.davisStatus()
 	return st
 }
 

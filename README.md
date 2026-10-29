@@ -19,6 +19,7 @@ APRS I-Gate ソフトウェアです。地図には OpenStreetMap を使いま�
 - **局リスト**: 検索、RF / IS での絞り込み、距離表示。クリックで地図上へ移動
 - **パケットモニター**: RF受信 / IS受信 / 送信 / ゲートを色分けし、絞り込みも可能
 - **メッセージ**: 送受信、ACK の自動返信、再送（最大 5 回）
+- **ウェザーステーション (Davis)**: Vantage Pro2 / Vue のコンソールにつないだ USB・シリアルのデータロガー (6510USB / 6510SER)、または WeatherLinkIP から LOOP プロトコルで現在値を読み取り、自局とは別の SSID（既定は自局コール-13）の位置付き APRS WX パケットとして APRS-IS / RF に送信。「気象」タブに現在値・本日の極値・グラフ（6時間 / 24時間 / 7日）を表示し、履歴は再起動後も引き継ぐ。TNC 用とは別のシリアルポートを指定する。WeatherLink など他のソフトが同じロガーを使っていると読み取れない
 - **更新**: 設定の「更新」で、新しい版の確認と自動入れ替え（チェック欄でオン・オフ、既定オフ）に対応。オフのときも画面上部の表示から手動で更新できる。systemd で動かすときは `Restart=always` にしておくと更新後に自動で立ち上がる
 - **ログ**: `logs/YYYYMMDD.log` に日別保存
 
@@ -121,6 +122,8 @@ Go 1.26 以降が必要です。`tools\go` にポータブル版の Go が入っ
 | `src/parse.go` | APRS パケット解析 |
 | `src/stations.go` | 局データベース・軌跡 |
 | `src/messages.go` | メッセージの ACK と再送 |
+| `src/davis.go` | Davis ウェザーステーション (LOOP プロトコル、シリアル / TCP) |
+| `src/wxstation.go` | 自局の気象データの保持・履歴・APRS WX パケット送信 |
 | `src/web.go` | REST API と Server-Sent Events |
 | `src/web/` | 管理画面（Leaflet + OpenStreetMap） |
 | `scripts/bt-tnc-setup.sh` | Bluetooth 無線機を `/dev/rfcommN` として使えるようにする (Linux) |
