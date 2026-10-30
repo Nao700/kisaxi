@@ -82,7 +82,7 @@
           <div class="wxp-head">
             <span>履歴</span>
             <span class="wxp-range" id="wxp-range">
-              <button type="button" data-h="6">6時間</button><button type="button" data-h="24" class="active">24時間</button><button type="button" data-h="168">7日</button>
+              <button type="button" data-h="6">6時間</button><button type="button" data-h="24" class="active">24時間</button><button type="button" data-h="72">72時間</button><button type="button" data-h="168">7日</button>
             </span>
           </div>
           <div class="wxp-chart"><div class="wxp-title">気温 (℃) / 湿度 (%)</div><canvas id="wxc-temp"></canvas></div>
@@ -305,12 +305,13 @@
         </fieldset>
 
         <fieldset>
-          <legend>ウェザーステーション (Davis)</legend>
-          <label class="chk"><input type="checkbox" name="wxEnabled"> Davis のウェザーステーションから気象データを読み取る</label>
+          <legend>ウェザーステーション (Davis / rtl_433)</legend>
+          <label class="chk"><input type="checkbox" name="wxEnabled"> ウェザーステーションから気象データを読み取る</label>
           <label>接続方式
             <select name="wxSource">
               <option value="davis-serial">USB / シリアルのデータロガー (6510USB・6510SER)</option>
               <option value="davis-tcp">WeatherLinkIP (ネットワーク)</option>
+              <option value="rtl433">rtl_433 (RTL-SDR で 433MHz の簡易気象センサーを受信・β版)</option>
             </select>
           </label>
           <div class="wx-serial">
@@ -324,6 +325,15 @@
             </div>
           </div>
           <label class="wx-tcp">アドレス:ポート <input name="wxTcpAddr" placeholder="192.168.0.50:22222"></label>
+          <div class="wx-rtl">
+            <label>起動するコマンド <input name="wxRtlCmd" placeholder="rtl_433 -F json"></label>
+            <div class="row">
+              <label>センサーの model (部分一致) <input name="wxRtlModel" placeholder="空欄ですべて 例: WH1080"></label>
+              <label>id <input name="wxRtlId" placeholder="空欄ですべて"></label>
+            </div>
+            <p class="hint" id="wx-heard"></p>
+            <p class="hint">β版です。rtl_433 (別途インストール) を起動し、JSON の出力から気温・湿度・風・雨量・気圧・照度を読み取ります。近くに別のセンサーがあるときは model と id で使うものを絞ってください (下に受信できたセンサーが表示されます)。雨量は rtl_433 の積算値の増分から求めます。</p>
+          </div>
           <label>気象局のコールサイン-SSID <input name="wxCall" id="wx-call" maxlength="9" placeholder="空欄で自動"></label>
           <p class="hint" id="wx-call-hint"></p>
           <div class="row">
