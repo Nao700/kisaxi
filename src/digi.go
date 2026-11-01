@@ -62,9 +62,6 @@ func (a *App) digipeat(p *Packet, cfg Config) {
 	if !cfg.DigiEnabled || cfg.Callsign == "" {
 		return
 	}
-	if noRF(cfg.NoRFCalls, p.Src) {
-		return
-	}
 	_, tnc := a.clients()
 	if tnc == nil || !tnc.Status().Connected {
 		return
