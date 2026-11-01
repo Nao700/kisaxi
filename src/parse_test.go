@@ -157,3 +157,19 @@ func TestMicEAmbiguityReal(t *testing.T) {
 		t.Errorf("lat center: %v", p.Lat)
 	}
 }
+
+func TestNoRF(t *testing.T) {
+	list := "JA1ABC,JA2XYZ-9,JA3*"
+	for call, want := range map[string]bool{
+		"JA1ABC": true, "ja1abc-7": true, "JA1ABCD": false,
+		"JA2XYZ-9": true, "JA2XYZ": false, "JA2XYZ-1": false,
+		"JA3FOO-5": true, "JA4AAA": false,
+	} {
+		if got := noRF(list, call); got != want {
+			t.Errorf("noRF(%q)=%v want %v", call, got, want)
+		}
+	}
+	if noRF("", "JA1ABC") {
+		t.Error("empty list")
+	}
+}

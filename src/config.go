@@ -41,6 +41,8 @@ type Config struct {
 	IStoRFPath      string `json:"isToRfPath"`
 	MaxIStoRFPerMin int    `json:"maxIsToRfPerMin"`
 
+	NoRFCalls string `json:"noRfCalls"` // 除外局: 受信を無視し、RF へも送らない (カンマ区切り。JA1ABC は全 SSID、JA1ABC-9 は完全一致、JA1* は前方一致)
+
 	DigiEnabled bool `json:"digiEnabled"` // デジピータ (WIDE1-1・自局コール宛を中継)
 	DigiWide    bool `json:"digiWide"`    // WIDE2-n も中継する
 
@@ -170,6 +172,7 @@ func (c *Config) Normalize() {
 	if c.DXUnit != "mi" {
 		c.DXUnit = "km"
 	}
+	c.NoRFCalls = strings.ToUpper(strings.Join(strings.FieldsFunc(c.NoRFCalls, func(r rune) bool { return r == ',' || r == ' ' || r == '、' || r == '\n' }), ","))
 	c.IStoRFPath = strings.ToUpper(strings.TrimSpace(c.IStoRFPath))
 	c.BeaconRFPath = strings.ToUpper(strings.TrimSpace(c.BeaconRFPath))
 }
