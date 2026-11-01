@@ -316,7 +316,7 @@ func (a *App) handleMessage(p *Packet, via string) {
 	}
 	if p.MsgID != "" {
 		// 重複受信でも ACK は毎回返す
-		a.transmit(msgBody(p.Src, "ack"+p.MsgID, ""), via == "RF", via == "IS", cfg)
+		a.transmit(msgBody(p.Src, "ack"+p.MsgID, ""), via == "RF" && !noRF(cfg.NoRFCalls, p.Src), via == "IS", cfg)
 	}
 	if m := a.msgs.Incoming(p, via); m != nil {
 		log.Printf("メッセージ受信 %s: %s", m.From, m.Text)
@@ -383,6 +383,9 @@ func (a *App) heardOnRF(call string, within time.Duration) bool {
 // gateToRF は APRS-IS から受けたメッセージのうち、宛先がローカル(RF)で最近受信された局のものを RF へ送る。
 func (a *App) gateToRF(p *Packet, cfg Config) {
 	if p.Type != "message" || p.MsgTo == "" {
+		return
+	}
+	if noRF(cfg.NoRFCalls, p.Src) || noRF(cfg.NoRFCalls, p.MsgTo) {
 		return
 	}
 	_, tnc := a.clients()
