@@ -158,7 +158,7 @@ func connChanged(o, n Config) bool {
 	return o.Callsign != n.Callsign || o.Passcode != n.Passcode ||
 		o.ISEnabled != n.ISEnabled || o.ISServer != n.ISServer || o.ISFilter != n.ISFilter ||
 		o.TNCType != n.TNCType || o.SerialPort != n.SerialPort || o.Baud != n.Baud ||
-		o.KissTCPAddr != n.KissTCPAddr || o.TNCInit != n.TNCInit || o.TxDelayMs != n.TxDelayMs
+		o.KissTCPAddr != n.KissTCPAddr || o.BTAddr != n.BTAddr || o.BTBridgeAddr != n.BTBridgeAddr || o.TNCInit != n.TNCInit || o.TxDelayMs != n.TxDelayMs
 }
 
 func (a *App) goRun(run func(context.Context), ctx context.Context) {

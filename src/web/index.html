@@ -225,6 +225,7 @@
               <option value="none">使用しない</option>
               <option value="kiss-serial">KISS シリアル (COM ポート)</option>
               <option value="kiss-tcp">KISS TCP (Direwolf / Soundmodem 等)</option>
+              <option value="kiss-bt">KISS Bluetooth (Android アプリ経由)</option>
             </select>
           </label>
           <div class="tnc-serial">
@@ -243,6 +244,15 @@
             <label>KISS 移行コマンド (1行1コマンド・任意)
               <textarea name="tncInit" rows="2" placeholder="例: KISS ON&#10;RESTART"></textarea>
             </label>
+          </div>
+          <div class="tnc-bt">
+            <label>Bluetooth 機器 (Android でペアリング済みの機器)
+              <select name="btAddr"></select>
+            </label>
+            <input type="hidden" name="btName">
+            <input type="hidden" name="btBridgeAddr">
+            <button type="button" id="btn-btrefresh">一覧を更新</button>
+            <div id="bt-msg" class="hint"></div>
           </div>
           <label class="tnc-tcp">アドレス:ポート <input name="kissTcpAddr" placeholder="127.0.0.1:8001"></label>
           <label>TXDELAY (ms, 0=TNC の設定のまま) <input name="txDelayMs" type="number" min="0" max="2550" step="10"></label>
