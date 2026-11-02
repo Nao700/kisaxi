@@ -250,6 +250,7 @@
               <option value="none">使用しない</option>
               <option value="kiss-serial">KISS シリアル (COM ポート)</option>
               <option value="kiss-tcp">KISS TCP (Direwolf / Soundmodem 等)</option>
+              <option value="kiss-bt">KISS Bluetooth (Android アプリ経由)</option>
             </select>
           </label>
           <div class="tnc-serial">
@@ -269,6 +270,15 @@
               <textarea name="tncInit" rows="2" placeholder="例: KISS ON&#10;RESTART"></textarea>
             </label>
           </div>
+          <div class="tnc-bt">
+            <label>Bluetooth 機器 (Android でペアリング済みの機器)
+              <select name="btAddr"></select>
+            </label>
+            <input type="hidden" name="btName">
+            <input type="hidden" name="btBridgeAddr">
+            <button type="button" id="btn-btrefresh">一覧を更新</button>
+            <div id="bt-msg" class="hint"></div>
+          </div>
           <label class="tnc-tcp">アドレス:ポート <input name="kissTcpAddr" placeholder="127.0.0.1:8001"></label>
           <label>TXDELAY (ms, 0=TNC の設定のまま) <input name="txDelayMs" type="number" min="0" max="2550" step="10"></label>
         </fieldset>
@@ -282,6 +292,8 @@
             <label>IS→RF 最大 (件/分) <input name="maxIsToRfPerMin" type="number" min="1"></label>
           </div>
           <label>IS→RF 送信パス <input name="isToRfPath" placeholder="WIDE1-1 (空欄で直接)"></label>
+          <label>除外局 (完全無視) <input name="noRfCalls" placeholder="例: JA1ABC, JA2XYZ-9, JA3*"></label>
+          <p class="hint">ここに書いた局は完全に無視します。RF・APRS-IS どちらの受信もなかったことにし (一覧・地図・メッセージ・DX・IS への転送・デジピートの対象外)、その局宛のメッセージも送りません。カンマ区切り。JA1ABC は全 SSID、JA1ABC-9 はその SSID のみ、JA3* は前方一致。</p>
         </fieldset>
 
         <fieldset>
@@ -367,7 +379,16 @@
             <label>受信データの保持時間 (分) <input name="stationExpireMin" type="number" min="1"></label>
             <label>軌跡の最大点数 <input name="trackPoints" type="number" min="1"></label>
           </div>
+          <div class="row">
+            <label>軌跡の区切り <select name="trackSplit">
+              <option value="day">日付が変わったら</option>
+              <option value="gap">一定時間あいたら</option>
+              <option value="none">区切らない</option>
+            </select></label>
+            <label class="track-gap">間隔 (分) <input name="trackGapMin" type="number" min="1"></label>
+          </div>
           <p class="hint">RF・APRS-IS で受信した局とパケットをこの時間保持します。アプリを再起動しても引き継がれます (既定 60 分)。</p>
+          <p class="hint">軌跡は区切りのところで線を切って描きます。受信範囲の外に出て戻ってきた局などで、離れた点どうしが直線で結ばれるのを防ぎます (既定は日付が変わったら)。</p>
           <label class="chk"><input type="checkbox" name="logPackets"> パケットをログファイル (logs フォルダ) に保存</label>
           <label>Web UI 待ち受け (再起動後に有効) <input name="httpListen" placeholder="127.0.0.1:8073"></label>
           <label class="chk"><input type="checkbox" name="openBrowser"> 起動時にブラウザを開く</label>

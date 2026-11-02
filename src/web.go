@@ -249,6 +249,14 @@ func (a *App) Handler(static fs.FS) http.Handler {
 		writeJSON(w, a.WX())
 	})
 
+	mux.HandleFunc("/api/btdevices", func(w http.ResponseWriter, r *http.Request) {
+		devs, err := listBTDevices(r.Context(), a.Config().BTBridgeAddr)
+		out := map[string]any{"devices": devs}
+		if err != nil {
+			out["error"] = err.Error()
+		}
+		writeJSON(w, out)
+	})
 	mux.HandleFunc("/api/serialports", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, listSerialPorts())
 	})

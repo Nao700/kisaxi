@@ -28,18 +28,23 @@ type Config struct {
 	ISServer  string `json:"isServer"`
 	ISFilter  string `json:"isFilter"`
 
-	TNCType     string `json:"tncType"` // none, kiss-serial, kiss-tcp
-	SerialPort  string `json:"serialPort"`
-	Baud        int    `json:"baud"`
-	KissTCPAddr string `json:"kissTcpAddr"`
-	TNCInit     string `json:"tncInit"` // KISS モード移行前に送るコマンド (改行区切り)
-	TxDelayMs   int    `json:"txDelayMs"`
+	TNCType      string `json:"tncType"` // none, kiss-serial, kiss-tcp, kiss-bt
+	SerialPort   string `json:"serialPort"`
+	Baud         int    `json:"baud"`
+	KissTCPAddr  string `json:"kissTcpAddr"`
+	BTAddr       string `json:"btAddr"`       // kiss-bt: 接続先 Bluetooth アドレス (Android ブリッジ経由)
+	BTName       string `json:"btName"`       // kiss-bt: 表示用の機器名
+	BTBridgeAddr string `json:"btBridgeAddr"` // kiss-bt: ブリッジの HTTP アドレス (空=127.0.0.1:8074)
+	TNCInit      string `json:"tncInit"`      // KISS モード移行前に送るコマンド (改行区切り)
+	TxDelayMs    int    `json:"txDelayMs"`
 
 	RFtoIS          bool   `json:"rfToIs"`
 	IStoRF          bool   `json:"isToRf"`
 	LocalHeardMin   int    `json:"localHeardMin"`
 	IStoRFPath      string `json:"isToRfPath"`
 	MaxIStoRFPerMin int    `json:"maxIsToRfPerMin"`
+
+	NoRFCalls string `json:"noRfCalls"` // 除外局: 受信を無視し、RF へも送らない (カンマ区切り。JA1ABC は全 SSID、JA1ABC-9 は完全一致、JA1* は前方一致)
 
 	DigiEnabled bool `json:"digiEnabled"` // デジピータ (WIDE1-1・自局コール宛を中継)
 	DigiWide    bool `json:"digiWide"`    // WIDE2-n も中継する
@@ -60,6 +65,8 @@ type Config struct {
 
 	StationExpireMin int    `json:"stationExpireMin"`
 	TrackPoints      int    `json:"trackPoints"`
+	TrackSplit       string `json:"trackSplit"`  // 軌跡の区切り: day (日付が変わったら) / gap (TrackGapMin 分あいたら) / none
+	TrackGapMin      int    `json:"trackGapMin"` // TrackSplit=gap のときの間隔 (分)
 	LogPackets       bool   `json:"logPackets"`
 	HTTPListen       string `json:"httpListen"`
 	OpenBrowser      bool   `json:"openBrowser"`
@@ -123,6 +130,8 @@ func defaultConfig() Config {
 		WXRFMin:          30,
 		StationExpireMin: 60,
 		TrackPoints:      300,
+		TrackSplit:       "day",
+		TrackGapMin:      30,
 		LogPackets:       true,
 		HTTPListen:       "127.0.0.1:8073",
 		OpenBrowser:      true,
@@ -166,6 +175,12 @@ func (c *Config) Normalize() {
 	if c.TrackPoints <= 0 {
 		c.TrackPoints = d.TrackPoints
 	}
+	if c.TrackSplit != "gap" && c.TrackSplit != "none" {
+		c.TrackSplit = "day"
+	}
+	if c.TrackGapMin <= 0 {
+		c.TrackGapMin = d.TrackGapMin
+	}
 	if c.HTTPListen == "" {
 		c.HTTPListen = d.HTTPListen
 	}
@@ -193,6 +208,7 @@ func (c *Config) Normalize() {
 	c.WXCall = strings.ToUpper(strings.TrimSpace(c.WXCall))
 	c.WXSerialPort = strings.TrimSpace(c.WXSerialPort)
 	c.WXTCPAddr = strings.TrimSpace(c.WXTCPAddr)
+	c.NoRFCalls = strings.ToUpper(strings.Join(strings.FieldsFunc(c.NoRFCalls, func(r rune) bool { return r == ',' || r == ' ' || r == '、' || r == '\n' }), ","))
 	c.IStoRFPath = strings.ToUpper(strings.TrimSpace(c.IStoRFPath))
 	c.BeaconRFPath = strings.ToUpper(strings.TrimSpace(c.BeaconRFPath))
 }
@@ -240,7 +256,7 @@ func (c *Config) Validate() error {
 		}
 	}
 	switch c.TNCType {
-	case "none", "kiss-serial", "kiss-tcp":
+	case "none", "kiss-serial", "kiss-tcp", "kiss-bt":
 	default:
 		return errors.New("TNC 種別が正しくありません")
 	}

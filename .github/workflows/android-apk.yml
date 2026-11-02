@@ -1,0 +1,32 @@
+name: android-apk
+on:
+  workflow_dispatch:
+  push:
+    branches: [claude/project-thread-8u9xoa]
+    paths: ['android/**', 'src/**', '.github/workflows/android-apk.yml']
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: src/go.mod
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Build Go binary for Android
+        working-directory: src
+        env: { GOOS: android, GOARCH: arm64, CGO_ENABLED: '0' }
+        run: go build -trimpath -ldflags '-s -w' -o ../android/app/src/main/jniLibs/arm64-v8a/libkisaxi.so .
+      - name: Build APK (debug)
+        working-directory: android
+        run: gradle --no-daemon assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kisaxi-android-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk

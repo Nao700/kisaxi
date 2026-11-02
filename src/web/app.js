@@ -200,14 +200,34 @@ function drawStation(call) {
     ambigLayer.removeLayer(e.ambig);
     e.ambig = null;
   }
-  const pts = (s.track || []).map(p => [p[0], p[1]]);
-  if ($('#opt-tracks').checked && pts.length > 1) {
-    if (e.track) e.track.setLatLngs(pts);
-    else e.track = L.polyline(pts, { color: s.lastRf ? '#0b7a3e' : '#3557b7', weight: 2, opacity: 0.7 }).addTo(trackLayer);
+  const segs = trackSegments(s.track || []);
+  if ($('#opt-tracks').checked && segs.length) {
+    if (e.track) e.track.setLatLngs(segs);
+    else e.track = L.polyline(segs, { color: s.lastRf ? '#0b7a3e' : '#3557b7', weight: 2, opacity: 0.7 }).addTo(trackLayer);
   } else if (e.track) {
     trackLayer.removeLayer(e.track);
     e.track = null;
   }
+}
+
+// 軌跡を設定の区切り (日付が変わったら / 一定時間あいたら) で分け、2 点以上ある区間だけを返す
+function trackSegments(track) {
+  const mode = cfg.trackSplit || 'day';
+  const gap = (cfg.trackGapMin || 30) * 60;
+  const segs = [];
+  let cur = [], prev = null;
+  for (const p of track) {
+    if (prev) {
+      const brk = mode === 'gap' ? p[2] - prev[2] >= gap
+        : mode === 'day' ? new Date(p[2] * 1000).toDateString() !== new Date(prev[2] * 1000).toDateString()
+        : false;
+      if (brk) { if (cur.length > 1) segs.push(cur); cur = []; }
+    }
+    cur.push([p[0], p[1]]);
+    prev = p;
+  }
+  if (cur.length > 1) segs.push(cur);
+  return segs;
 }
 
 function upsertStation(s) {
@@ -657,7 +677,7 @@ async function loadAbout() {
 }
 
 // ---------- 設定 ----------
-const numFields = ['lat', 'lon', 'phgPower', 'phgHeight', 'phgGain', 'phgDir', 'baud', 'txDelayMs', 'localHeardMin', 'maxIsToRfPerMin', 'beaconRfMin', 'beaconIsMin', 'stationExpireMin', 'trackPoints', 'wxBaud', 'wxIsMin', 'wxRfMin'];
+const numFields = ['lat', 'lon', 'phgPower', 'phgHeight', 'phgGain', 'phgDir', 'baud', 'txDelayMs', 'localHeardMin', 'maxIsToRfPerMin', 'beaconRfMin', 'beaconIsMin', 'stationExpireMin', 'trackPoints', 'trackGapMin', 'wxBaud', 'wxIsMin', 'wxRfMin'];
 function fillForm() {
   const f = $('#cfg-form');
   for (const el of f.elements) {
@@ -667,6 +687,7 @@ function fillForm() {
   }
   updateTncFields();
   updateWxFields();
+  updateTrackFields();
   updateSymPreview();
   updatePhgPreview();
 }
@@ -685,6 +706,11 @@ function updateTncFields() {
   const t = $('#cfg-form').tncType.value;
   $$('.tnc-serial').forEach(e => (e.style.display = t === 'kiss-serial' ? '' : 'none'));
   $$('.tnc-tcp').forEach(e => (e.style.display = t === 'kiss-tcp' ? '' : 'none'));
+  $$('.tnc-bt').forEach(e => (e.style.display = t === 'kiss-bt' ? '' : 'none'));
+  if (t === 'kiss-bt') loadBTDevices();
+}
+function updateTrackFields() {
+  $$('.track-gap').forEach(e => (e.style.display = $('#cfg-form').trackSplit.value === 'gap' ? '' : 'none'));
 }
 function updateSymPreview() {
   const f = $('#cfg-form');
@@ -717,6 +743,7 @@ function updateRangeCircle() {
 for (const n of ['phgPower', 'phgHeight', 'phgGain']) $('#cfg-form')[n].addEventListener('input', updatePhgPreview);
 $('#cfg-form').phgDir.addEventListener('change', updatePhgPreview);
 $('#cfg-form').tncType.addEventListener('change', updateTncFields);
+$('#cfg-form').trackSplit.addEventListener('change', updateTrackFields);
 $('#cfg-form').symbolTable.addEventListener('input', updateSymPreview);
 $('#cfg-form').symbol.addEventListener('input', updateSymPreview);
 $('#btn-pickpos').addEventListener('click', () => setPickMode(!pickMode));
@@ -726,6 +753,27 @@ async function loadPorts() {
     $('#ports').innerHTML = ports.map(p => `<option value="${esc(p)}">`).join('');
   } catch { /* 無視 */ }
 }
+// Android ブリッジ経由の Bluetooth 機器一覧 (ペアリングは Android の設定で済ませておく)
+async function loadBTDevices() {
+  const f = $('#cfg-form'), sel = f.btAddr, msg = $('#bt-msg');
+  const cur = sel.value || cfg.btAddr || '';
+  try {
+    const r = await api('/api/btdevices');
+    const devs = r.devices || [];
+    sel.innerHTML = '<option value="">(選択してください)</option>' +
+      devs.map(d => `<option value="${esc(d.addr)}" data-name="${esc(d.name)}">${esc(d.name)} (${esc(d.addr)})</option>`).join('');
+    if (cur && !devs.some(d => d.addr === cur)) sel.insertAdjacentHTML('beforeend', `<option value="${esc(cur)}">${esc(cur)} (一覧にありません)</option>`);
+    sel.value = cur;
+    msg.textContent = r.error || (devs.length ? '' : 'ペアリング済みの機器がありません。Android の設定でペアリングしてください');
+  } catch (e) {
+    msg.textContent = e.message;
+  }
+}
+$('#cfg-form').btAddr.addEventListener('change', ev => {
+  const o = ev.target.selectedOptions[0];
+  $('#cfg-form').btName.value = (o && o.dataset.name) || '';
+});
+$('#btn-btrefresh').addEventListener('click', loadBTDevices);
 $('#cfg-form').addEventListener('submit', async ev => {
   ev.preventDefault();
   const res = $('#cfg-result');
@@ -745,6 +793,7 @@ function applyConfigUI() {
   $('#mycall').textContent = cfg.callsign || '(未設定)';
   listDirty = true;
   updateRangeCircle();
+  for (const k of stations.keys()) drawStation(k);
 }
 
 // ---------- ステータス ----------

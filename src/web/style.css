@@ -303,6 +303,13 @@ body.nolabels .stn-icon .label { display: none; }
   main { flex-direction: column; }
   #map { height: 45vh; flex: none; }
   #side { width: 100%; max-width: none; border-left: 0; border-top: 1px solid var(--border); flex: 1; }
+  /* スマホ幅: 設定フォームを画面内に収め、トーストは保存ボタンと重ならない位置へ */
+  fieldset { min-width: 0; }
+  .settings label { min-width: 0; }
+  .settings label input:not([type=checkbox]):not([type=radio]), .settings label select, .settings label textarea { width: 100%; min-width: 0; max-width: 100%; }
+  .settings .row { flex-wrap: wrap; }
+  .settings .row > label { min-width: 8em; }
+  #toast { bottom: 76px; max-width: calc(100vw - 32px); }
 }
 
 /* 気象タブ */
