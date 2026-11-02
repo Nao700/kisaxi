@@ -677,7 +677,7 @@ async function loadAbout() {
 }
 
 // ---------- 設定 ----------
-const numFields = ['lat', 'lon', 'phgPower', 'phgHeight', 'phgGain', 'phgDir', 'baud', 'txDelayMs', 'localHeardMin', 'maxIsToRfPerMin', 'beaconRfMin', 'beaconIsMin', 'stationExpireMin', 'trackPoints', 'trackGapMin', 'wxBaud', 'wxIsMin', 'wxRfMin'];
+const numFields = ['lat', 'lon', 'phgPower', 'phgHeight', 'phgGain', 'phgDir', 'baud', 'txDelayMs', 'localHeardMin', 'maxIsToRfPerMin', 'beaconRfMin', 'beaconIsMin', 'stationExpireMin', 'trackPoints', 'trackGapMin', 'wxBaud', 'wxIsMin', 'wxRfMin', 'wxSdrDevice', 'wxSdrGain', 'wxSdrPpm', 'wxSdrId', 'wxRainMm'];
 function fillForm() {
   const f = $('#cfg-form');
   for (const el of f.elements) {
@@ -904,6 +904,7 @@ function updateWxFields() {
   const src = f.wxSource.value;
   $$('.wx-serial').forEach(e => (e.style.display = src === 'davis-serial' ? '' : 'none'));
   $$('.wx-tcp').forEach(e => (e.style.display = src === 'davis-tcp' ? '' : 'none'));
+  $$('.wx-sdr').forEach(e => (e.style.display = src === 'davis-sdr' ? '' : 'none'));
   $$('.wx-rtl').forEach(e => (e.style.display = src === 'rtl433' ? '' : 'none'));
   const cs = (f.callsign.value || '').trim().toUpperCase();
   let auto = '';
@@ -942,7 +943,7 @@ function renderWXState() {
   if (!d) { dot.className = 'ind'; el.textContent = '停止中'; return; }
   if (d.connected && !d.error) {
     dot.className = 'ind ok';
-    el.textContent = `${d.desc} に接続中` + (d.last ? ` / 最終受信 ${hhmmss(d.last)}` : '');
+    el.textContent = `${d.desc} に接続中` + (d.last ? ` / 最終受信 ${hhmmss(d.last)}` : '') + (d.detail ? ` (${d.detail})` : '') + (d.battLow ? ' / センサー電池残量低下' : '');
   } else if (d.connected) {
     dot.className = 'ind warn';
     el.textContent = `${d.desc}: 応答がありません (${d.error})`;

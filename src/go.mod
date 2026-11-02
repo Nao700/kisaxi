@@ -8,3 +8,5 @@ require (
 )
 
 require golang.org/x/sys v0.43.0
+
+require github.com/ebitengine/purego v0.11.2

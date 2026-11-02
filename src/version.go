@@ -4,7 +4,7 @@ package main
 
 const (
 	softwareName    = "APRSIGate"
-	softwareVersion = "1.0.8"
+	softwareVersion = "1.0.9"
 	developedBy     = "Developed by JR2TTA Nao feat.Claude"
 )
 
@@ -15,6 +15,14 @@ type ChangeEntry struct {
 }
 
 var changelog = []ChangeEntry{
+	{
+		Version: "1.0.9",
+		Date:    "2026-11-02",
+		Changes: []string{
+			"Davis の屋外センサー (ISS) の電波を、RTL-SDR で直接受信できるようにしました (β版・コンソール不要)。928.15〜929.65 MHz の 16 チャンネルを同時に受信し、気温・湿度・風向・風速・雨量・日射を気象タブと APRS WX 送信に反映します。設定の接続方式で「RTL-SDR で屋外センサーを直接受信」を選びます",
+			"RTL-SDR のドライバ (rtlsdr.dll / librtlsdr) は KISAXI と同じフォルダに置きます。外部のプログラムは起動せず、KISAXI の中で直接受信します。気圧は電波に含まれないため送信されず、雨量は起動後の増分を積算します",
+		},
+	},
 	{
 		Version: "1.0.8",
 		Date:    "2026-10-29",

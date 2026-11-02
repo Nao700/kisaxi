@@ -323,6 +323,7 @@
             <select name="wxSource">
               <option value="davis-serial">USB / シリアルのデータロガー (6510USB・6510SER)</option>
               <option value="davis-tcp">WeatherLinkIP (ネットワーク)</option>
+              <option value="davis-sdr">RTL-SDR で屋外センサーを直接受信 (コンソール不要)</option>
               <option value="rtl433">rtl_433 (RTL-SDR で 433MHz の簡易気象センサーを受信・β版)</option>
             </select>
           </label>
@@ -335,6 +336,22 @@
                 </select>
               </label>
             </div>
+          </div>
+          <div class="wx-sdr">
+            <div class="row">
+              <label>SDR の番号 <input name="wxSdrDevice" type="number" min="0" max="9"></label>
+              <label>ゲイン (dB, 0=自動) <input name="wxSdrGain" type="number" min="0" max="50" step="0.1"></label>
+              <label>周波数補正 (ppm) <input name="wxSdrPpm" type="number" min="-200" max="200"></label>
+            </div>
+            <div class="row">
+              <label>送信機の ID
+                <select name="wxSdrId"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
+              </label>
+              <label>雨量計 1 回の転倒
+                <select name="wxRainMm"><option value="0.2">0.2 mm (国内版)</option><option value="0.254">0.254 mm (0.01 インチ)</option></select>
+              </label>
+            </div>
+            <p class="hint">928.15〜929.65 MHz の 16 チャンネルを同時に受信します (日本仕様)。気圧はコンソールからしか得られないため、SDR 受信では送信されません。雨量は起動後の増分を積算します。</p>
           </div>
           <label class="wx-tcp">アドレス:ポート <input name="wxTcpAddr" placeholder="192.168.0.50:22222"></label>
           <div class="wx-rtl">
