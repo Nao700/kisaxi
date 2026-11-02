@@ -809,6 +809,7 @@ function renderStatus() {
   const s = status.stats || {};
   renderDX();
   renderUpdate();
+  renderWxHeard();
   $('#stats').textContent = `RF受信 ${s.rfRx || 0} / IS受信 ${s.isRx || 0} / RF→IS ${s.rfToIs || 0} / IS→RF ${s.isToRf || 0} / デジ ${s.digi || 0} / 送信 RF ${s.txRf || 0}・IS ${s.txIs || 0}`;
 }
 
@@ -825,6 +826,12 @@ function renderDX() {
   el.textContent = `DX: ${r.call} ${d} ${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`;
   el.classList.add('has');
   el.title = `${status.dxText}\n(${cfg.dxReset === 'hour' ? '毎時 0 分' : '毎日 24 時'}にリセット・クリックで地図に表示)`;
+}
+function renderWxHeard() {
+  const el = $('#wx-heard');
+  if (!el) return;
+  const h = status.davis && status.davis.heard;
+  el.textContent = h && h.length ? `受信できたセンサー: ${h.join(' / ')}` : '';
 }
 function renderUpdate() {
   const u = status.update, el = $('#upd');
@@ -894,9 +901,10 @@ const wxActive = () => $('#tab-wx').classList.contains('active');
 
 function updateWxFields() {
   const f = $('#cfg-form');
-  const tcp = f.wxSource.value === 'davis-tcp';
-  $$('.wx-serial').forEach(e => (e.style.display = tcp ? 'none' : ''));
-  $$('.wx-tcp').forEach(e => (e.style.display = tcp ? '' : 'none'));
+  const src = f.wxSource.value;
+  $$('.wx-serial').forEach(e => (e.style.display = src === 'davis-serial' ? '' : 'none'));
+  $$('.wx-tcp').forEach(e => (e.style.display = src === 'davis-tcp' ? '' : 'none'));
+  $$('.wx-rtl').forEach(e => (e.style.display = src === 'rtl433' ? '' : 'none'));
   const cs = (f.callsign.value || '').trim().toUpperCase();
   let auto = '';
   if (cs) {
@@ -1107,8 +1115,8 @@ function renderWXCharts() {
     { name: '最大瞬間', get: p => p.gust, color: '#e8a33a', axis: 0, fmt: v => v.toFixed(1) + ' m/s' },
     { name: '平均', get: p => p.wind, color: '#2a9d8f', axis: 0, fmt: v => v.toFixed(1) + ' m/s' },
   ], [nice]);
-  // 雨量は見やすい幅にまとめる (6時間: 10分 / 24時間: 30分 / 7日: 3時間)
-  const bin = (wxRangeH <= 6 ? 10 : wxRangeH <= 24 ? 30 : 180) * 60000;
+  // 雨量は見やすい幅にまとめる (6時間: 10分 / 24時間: 30分 / 72時間: 1時間 / 7日: 3時間)
+  const bin = (wxRangeH <= 6 ? 10 : wxRangeH <= 24 ? 30 : wxRangeH <= 72 ? 60 : 180) * 60000;
   const bins = new Map();
   for (const p of pts) { const k = Math.floor(p.t / bin) * bin; bins.set(k, (bins.get(k) || 0) + (p.rain || 0)); }
   const rpts = [...bins].map(([t, rain]) => ({ t, rain }));

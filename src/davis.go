@@ -214,6 +214,8 @@ type DavisStatus struct {
 	Desc      string `json:"desc"`
 	Error     string `json:"error"`
 	Last      int64  `json:"last"` // 最後に読めた時刻 (ミリ秒)
+
+	Heard []string `json:"heard,omitempty"` // rtl_433 で受信できている気象センサー (新しい順)
 }
 
 type DavisClient struct {
