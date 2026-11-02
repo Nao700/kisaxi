@@ -28,12 +28,15 @@ type Config struct {
 	ISServer  string `json:"isServer"`
 	ISFilter  string `json:"isFilter"`
 
-	TNCType     string `json:"tncType"` // none, kiss-serial, kiss-tcp
-	SerialPort  string `json:"serialPort"`
-	Baud        int    `json:"baud"`
-	KissTCPAddr string `json:"kissTcpAddr"`
-	TNCInit     string `json:"tncInit"` // KISS モード移行前に送るコマンド (改行区切り)
-	TxDelayMs   int    `json:"txDelayMs"`
+	TNCType      string `json:"tncType"` // none, kiss-serial, kiss-tcp, kiss-bt
+	SerialPort   string `json:"serialPort"`
+	Baud         int    `json:"baud"`
+	KissTCPAddr  string `json:"kissTcpAddr"`
+	BTAddr       string `json:"btAddr"`       // kiss-bt: 接続先 Bluetooth アドレス (Android ブリッジ経由)
+	BTName       string `json:"btName"`       // kiss-bt: 表示用の機器名
+	BTBridgeAddr string `json:"btBridgeAddr"` // kiss-bt: ブリッジの HTTP アドレス (空=127.0.0.1:8074)
+	TNCInit      string `json:"tncInit"`      // KISS モード移行前に送るコマンド (改行区切り)
+	TxDelayMs    int    `json:"txDelayMs"`
 
 	RFtoIS          bool   `json:"rfToIs"`
 	IStoRF          bool   `json:"isToRf"`
@@ -199,7 +202,7 @@ func (c *Config) Validate() error {
 		}
 	}
 	switch c.TNCType {
-	case "none", "kiss-serial", "kiss-tcp":
+	case "none", "kiss-serial", "kiss-tcp", "kiss-bt":
 	default:
 		return errors.New("TNC 種別が正しくありません")
 	}

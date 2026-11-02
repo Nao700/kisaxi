@@ -39,6 +39,12 @@ func NewTNC(cfg Config, onFrame func([]byte), onStatus func()) *TNC {
 		t.st.Desc = fmt.Sprintf("KISS %s %dbps", cfg.SerialPort, cfg.Baud)
 	case "kiss-tcp":
 		t.st.Desc = "KISS TCP " + cfg.KissTCPAddr
+	case "kiss-bt":
+		name := cfg.BTName
+		if name == "" {
+			name = cfg.BTAddr
+		}
+		t.st.Desc = "KISS Bluetooth " + name
 	}
 	return t
 }
@@ -81,6 +87,8 @@ func (t *TNC) open(ctx context.Context) (io.ReadWriteCloser, error) {
 	case "kiss-tcp":
 		d := net.Dialer{Timeout: 10 * time.Second, KeepAlive: 30 * time.Second}
 		return d.DialContext(ctx, "tcp", t.cfg.KissTCPAddr)
+	case "kiss-bt":
+		return openBT(ctx, t.cfg)
 	}
 	return nil, errors.New("TNC 種別が不正です")
 }

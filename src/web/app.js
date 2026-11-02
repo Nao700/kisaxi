@@ -683,6 +683,8 @@ function updateTncFields() {
   const t = $('#cfg-form').tncType.value;
   $$('.tnc-serial').forEach(e => (e.style.display = t === 'kiss-serial' ? '' : 'none'));
   $$('.tnc-tcp').forEach(e => (e.style.display = t === 'kiss-tcp' ? '' : 'none'));
+  $$('.tnc-bt').forEach(e => (e.style.display = t === 'kiss-bt' ? '' : 'none'));
+  if (t === 'kiss-bt') loadBTDevices();
 }
 function updateSymPreview() {
   const f = $('#cfg-form');
@@ -724,6 +726,27 @@ async function loadPorts() {
     $('#ports').innerHTML = ports.map(p => `<option value="${esc(p)}">`).join('');
   } catch { /* 無視 */ }
 }
+// Android ブリッジ経由の Bluetooth 機器一覧 (ペアリングは Android の設定で済ませておく)
+async function loadBTDevices() {
+  const f = $('#cfg-form'), sel = f.btAddr, msg = $('#bt-msg');
+  const cur = sel.value || cfg.btAddr || '';
+  try {
+    const r = await api('/api/btdevices');
+    const devs = r.devices || [];
+    sel.innerHTML = '<option value="">(選択してください)</option>' +
+      devs.map(d => `<option value="${esc(d.addr)}" data-name="${esc(d.name)}">${esc(d.name)} (${esc(d.addr)})</option>`).join('');
+    if (cur && !devs.some(d => d.addr === cur)) sel.insertAdjacentHTML('beforeend', `<option value="${esc(cur)}">${esc(cur)} (一覧にありません)</option>`);
+    sel.value = cur;
+    msg.textContent = r.error || (devs.length ? '' : 'ペアリング済みの機器がありません。Android の設定でペアリングしてください');
+  } catch (e) {
+    msg.textContent = e.message;
+  }
+}
+$('#cfg-form').btAddr.addEventListener('change', ev => {
+  const o = ev.target.selectedOptions[0];
+  $('#cfg-form').btName.value = (o && o.dataset.name) || '';
+});
+$('#btn-btrefresh').addEventListener('click', loadBTDevices);
 $('#cfg-form').addEventListener('submit', async ev => {
   ev.preventDefault();
   const res = $('#cfg-result');
