@@ -42,7 +42,7 @@ type App struct {
 	cfg    Config
 	is     *ISClient
 	tnc    *TNC
-	davis  wxSource
+	davis  wxClient
 	cancel context.CancelFunc
 
 	db     *StationDB
@@ -146,6 +146,8 @@ func (a *App) Start() {
 	if cfg.WXEnabled {
 		if cfg.WXSource == "davis-sdr" {
 			a.davis = NewDavisRFClient(cfg, a.wxIngest, a.broadcastStatus)
+		} else if cfg.WXSource == "rtl433" {
+			a.davis = NewRtl433Client(cfg, a.wxIngest, a.broadcastStatus)
 		} else {
 			a.davis = NewDavisClient(cfg, a.wxIngest, a.broadcastStatus)
 		}

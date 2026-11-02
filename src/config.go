@@ -73,7 +73,7 @@ type Config struct {
 
 	// ウェザーステーション (Davis)。気象データを読み取り、別 SSID で APRS WX として送信する
 	WXEnabled    bool    `json:"wxEnabled"`
-	WXSource     string  `json:"wxSource"` // davis-serial (USB / シリアルのロガー), davis-tcp (WeatherLinkIP)
+	WXSource     string  `json:"wxSource"` // davis-serial (USB / シリアルのロガー), davis-tcp (WeatherLinkIP), davis-sdr (RTL-SDR 直接受信), rtl433 (β版)
 	WXSerialPort string  `json:"wxSerialPort"`
 	WXBaud       int     `json:"wxBaud"`
 	WXTCPAddr    string  `json:"wxTcpAddr"`
@@ -82,6 +82,9 @@ type Config struct {
 	WXSDRPPM     int     `json:"wxSdrPpm"`    // davis-sdr: 周波数補正 ppm
 	WXSDRID      int     `json:"wxSdrId"`     // davis-sdr: 受信する ISS の ID (1〜8)
 	WXRainMm     float64 `json:"wxRainMm"`    // davis-sdr: 雨量計 1 回の転倒の雨量 mm (国内版 0.2 / 米国版 0.254)
+	WXRtlCmd     string  `json:"wxRtlCmd"`    // rtl433 のとき起動するコマンド (JSON を標準出力へ出す)
+	WXRtlModel   string  `json:"wxRtlModel"`  // 使うセンサーの model (部分一致、空欄ですべて)
+	WXRtlID      string  `json:"wxRtlId"`     // 使うセンサーの id (空欄ですべて)
 	WXCall       string  `json:"wxCall"`      // WX 局のコールサイン-SSID (空欄なら自局のコールに -13 を付ける)
 	WXIS         bool    `json:"wxIs"`
 	WXISMin      int     `json:"wxIsMin"`
@@ -131,6 +134,7 @@ func defaultConfig() Config {
 		WXSDRID:          1,
 		WXRainMm:         0.2,
 		WXBaud:           19200,
+		WXRtlCmd:         "rtl_433 -F json",
 		WXIS:             true,
 		WXISMin:          5,
 		WXRF:             false,
@@ -200,7 +204,7 @@ func (c *Config) Normalize() {
 	if c.DXUnit != "mi" {
 		c.DXUnit = "km"
 	}
-	if c.WXSource != "davis-tcp" && c.WXSource != "davis-sdr" {
+	if c.WXSource != "davis-tcp" && c.WXSource != "davis-sdr" && c.WXSource != "rtl433" {
 		c.WXSource = "davis-serial"
 	}
 	if c.WXSDRID < 1 || c.WXSDRID > 8 {
@@ -218,6 +222,12 @@ func (c *Config) Normalize() {
 	if c.WXRainMm != 0.2 && c.WXRainMm != 0.254 {
 		c.WXRainMm = d.WXRainMm
 	}
+	c.WXRtlCmd = strings.TrimSpace(c.WXRtlCmd)
+	if c.WXRtlCmd == "" {
+		c.WXRtlCmd = d.WXRtlCmd
+	}
+	c.WXRtlModel = strings.TrimSpace(c.WXRtlModel)
+	c.WXRtlID = strings.TrimSpace(c.WXRtlID)
 	if c.WXBaud <= 0 {
 		c.WXBaud = d.WXBaud
 	}

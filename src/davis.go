@@ -216,12 +216,8 @@ type DavisStatus struct {
 	Last      int64  `json:"last"`              // 最後に読めた時刻 (ミリ秒)
 	Detail    string `json:"detail,omitempty"`  // SDR: 最後に受信したチャンネル
 	BattLow   bool   `json:"battLow,omitempty"` // SDR: 送信機の電池残量低下
-}
 
-// wxSource は気象データの読み取り元 (シリアル / TCP / SDR)。
-type wxSource interface {
-	Run(ctx context.Context)
-	Status() DavisStatus
+	Heard []string `json:"heard,omitempty"` // rtl_433 で受信できている気象センサー (新しい順)
 }
 
 type DavisClient struct {
