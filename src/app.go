@@ -42,7 +42,7 @@ type App struct {
 	cfg    Config
 	is     *ISClient
 	tnc    *TNC
-	davis  *DavisClient
+	davis  wxSource
 	cancel context.CancelFunc
 
 	db     *StationDB
@@ -144,7 +144,11 @@ func (a *App) Start() {
 		a.goRun(a.tnc.Run, ctx)
 	}
 	if cfg.WXEnabled {
-		a.davis = NewDavisClient(cfg, a.wxIngest, a.broadcastStatus)
+		if cfg.WXSource == "davis-sdr" {
+			a.davis = NewDavisRFClient(cfg, a.wxIngest, a.broadcastStatus)
+		} else {
+			a.davis = NewDavisClient(cfg, a.wxIngest, a.broadcastStatus)
+		}
 		a.goRun(a.davis.Run, ctx)
 	}
 	a.mu.Unlock()
@@ -167,7 +171,8 @@ func connChanged(o, n Config) bool {
 		o.TNCType != n.TNCType || o.SerialPort != n.SerialPort || o.Baud != n.Baud ||
 		o.KissTCPAddr != n.KissTCPAddr || o.BTAddr != n.BTAddr || o.BTBridgeAddr != n.BTBridgeAddr || o.TNCInit != n.TNCInit || o.TxDelayMs != n.TxDelayMs ||
 		o.WXEnabled != n.WXEnabled || o.WXSource != n.WXSource || o.WXSerialPort != n.WXSerialPort ||
-		o.WXBaud != n.WXBaud || o.WXTCPAddr != n.WXTCPAddr
+		o.WXBaud != n.WXBaud || o.WXTCPAddr != n.WXTCPAddr ||
+		o.WXSDRDevice != n.WXSDRDevice || o.WXSDRGain != n.WXSDRGain || o.WXSDRPPM != n.WXSDRPPM || o.WXSDRID != n.WXSDRID || o.WXRainMm != n.WXRainMm
 }
 
 func (a *App) goRun(run func(context.Context), ctx context.Context) {

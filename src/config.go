@@ -72,16 +72,21 @@ type Config struct {
 	OpenBrowser      bool   `json:"openBrowser"`
 
 	// ウェザーステーション (Davis)。気象データを読み取り、別 SSID で APRS WX として送信する
-	WXEnabled    bool   `json:"wxEnabled"`
-	WXSource     string `json:"wxSource"` // davis-serial (USB / シリアルのロガー), davis-tcp (WeatherLinkIP)
-	WXSerialPort string `json:"wxSerialPort"`
-	WXBaud       int    `json:"wxBaud"`
-	WXTCPAddr    string `json:"wxTcpAddr"`
-	WXCall       string `json:"wxCall"` // WX 局のコールサイン-SSID (空欄なら自局のコールに -13 を付ける)
-	WXIS         bool   `json:"wxIs"`
-	WXISMin      int    `json:"wxIsMin"`
-	WXRF         bool   `json:"wxRf"`
-	WXRFMin      int    `json:"wxRfMin"`
+	WXEnabled    bool    `json:"wxEnabled"`
+	WXSource     string  `json:"wxSource"` // davis-serial (USB / シリアルのロガー), davis-tcp (WeatherLinkIP)
+	WXSerialPort string  `json:"wxSerialPort"`
+	WXBaud       int     `json:"wxBaud"`
+	WXTCPAddr    string  `json:"wxTcpAddr"`
+	WXSDRDevice  int     `json:"wxSdrDevice"` // davis-sdr: RTL-SDR の番号 (0 から)
+	WXSDRGain    float64 `json:"wxSdrGain"`   // davis-sdr: ゲイン dB (0 = 自動)
+	WXSDRPPM     int     `json:"wxSdrPpm"`    // davis-sdr: 周波数補正 ppm
+	WXSDRID      int     `json:"wxSdrId"`     // davis-sdr: 受信する ISS の ID (1〜8)
+	WXRainMm     float64 `json:"wxRainMm"`    // davis-sdr: 雨量計 1 回の転倒の雨量 mm (国内版 0.2 / 米国版 0.254)
+	WXCall       string  `json:"wxCall"`      // WX 局のコールサイン-SSID (空欄なら自局のコールに -13 を付ける)
+	WXIS         bool    `json:"wxIs"`
+	WXISMin      int     `json:"wxIsMin"`
+	WXRF         bool    `json:"wxRf"`
+	WXRFMin      int     `json:"wxRfMin"`
 
 	Objects []ObjectDef `json:"objects"`
 }
@@ -123,6 +128,8 @@ func defaultConfig() Config {
 		DXUnit:           "km",
 		UpdateCheck:      false,
 		WXSource:         "davis-serial",
+		WXSDRID:          1,
+		WXRainMm:         0.2,
 		WXBaud:           19200,
 		WXIS:             true,
 		WXISMin:          5,
@@ -193,8 +200,23 @@ func (c *Config) Normalize() {
 	if c.DXUnit != "mi" {
 		c.DXUnit = "km"
 	}
-	if c.WXSource != "davis-tcp" {
+	if c.WXSource != "davis-tcp" && c.WXSource != "davis-sdr" {
 		c.WXSource = "davis-serial"
+	}
+	if c.WXSDRID < 1 || c.WXSDRID > 8 {
+		c.WXSDRID = d.WXSDRID
+	}
+	if c.WXSDRDevice < 0 {
+		c.WXSDRDevice = 0
+	}
+	if c.WXSDRGain < 0 || c.WXSDRGain > 50 {
+		c.WXSDRGain = 0
+	}
+	if c.WXSDRPPM < -200 || c.WXSDRPPM > 200 {
+		c.WXSDRPPM = 0
+	}
+	if c.WXRainMm != 0.2 && c.WXRainMm != 0.254 {
+		c.WXRainMm = d.WXRainMm
 	}
 	if c.WXBaud <= 0 {
 		c.WXBaud = d.WXBaud
