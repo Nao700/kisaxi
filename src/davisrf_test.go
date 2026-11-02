@@ -6,6 +6,7 @@ import (
 	"io"
 	"math"
 	"math/rand"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -180,5 +181,33 @@ func TestRFStaleTemperature(t *testing.T) {
 	w := s.ingest(parseRFPacket(rfBuildPacket(1, 9, 3, 0, 0, 0, false)), now.Add(rfSensorTTL+time.Minute))
 	if w.Temp != nil {
 		t.Fatal("古い気温は欠測にする")
+	}
+}
+
+// 実際の librtlsdr 経由の経路を、偽のライブラリ (testdata/fake_rtlsdr.c) で確かめる。
+// 使い方: gcc -shared -fPIC -o /tmp/fake/librtlsdr.so.0 testdata/fake_rtlsdr.c && LD_LIBRARY_PATH=/tmp/fake go test -run LibRTL
+// ライブラリが見つからないときは何もしない。
+func TestRTLSDRLibrary(t *testing.T) {
+	if _, err := loadRTL(); err != nil {
+		t.Skip("librtlsdr がありません: ", err)
+	}
+	raw := int16(math.Round((18.0*9/5 + 32) * 160))
+	f := rfChan1 + 5*rfChanStep + 1000
+	data := rfSynth(0.6, []rfTx{{0.2, f, rfBuildPacket(1, 8, 4, 100, byte(uint16(raw)>>8), byte(raw), false)}})
+	path := t.TempDir() + "/iq.cu8"
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("FAKE_IQ", path)
+	var mu sync.Mutex
+	var got []*Weather
+	d := NewDavisRFClient(defaultConfig(), func(w *Weather, _ time.Time) { mu.Lock(); got = append(got, w); mu.Unlock() }, func() {})
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	d.session(ctx)
+	mu.Lock()
+	defer mu.Unlock()
+	if len(got) != 1 || got[0].Temp == nil || math.Abs(*got[0].Temp-18) > 0.1 {
+		t.Fatalf("取得 %d 件", len(got))
 	}
 }

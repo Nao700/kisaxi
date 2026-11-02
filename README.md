@@ -123,6 +123,7 @@ Go 1.26 以降が必要です。`tools\go` にポータブル版の Go が入っ
 | `src/stations.go` | 局データベース・軌跡 |
 | `src/messages.go` | メッセージの ACK と再送 |
 | `src/davis.go` | Davis ウェザーステーション (LOOP プロトコル、シリアル / TCP) |
+| `src/davisrf.go`, `src/rtlsdr.go` | Davis 屋外センサーの無線 (RTL-SDR) 直接受信と復調 |
 | `src/wxstation.go` | 自局の気象データの保持・履歴・APRS WX パケット送信 |
 | `src/web.go` | REST API と Server-Sent Events |
 | `src/web/` | 管理画面（Leaflet + OpenStreetMap） |
