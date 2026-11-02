@@ -231,6 +231,24 @@ func (a *App) Handler(static fs.FS) http.Handler {
 		writeJSON(w, map[string]bool{"ok": true})
 	})
 
+	// 気象ステーションの現在値・履歴・送信状況
+	mux.HandleFunc("/api/wx", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, a.WX())
+	})
+
+	// 気象パケットを今すぐ送信
+	mux.HandleFunc("/api/wx/send", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || !sameOrigin(r) {
+			writeErr(w, http.StatusForbidden, "forbidden")
+			return
+		}
+		if err := a.WXSendNow(); err != nil {
+			writeErr(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		writeJSON(w, a.WX())
+	})
+
 	mux.HandleFunc("/api/btdevices", func(w http.ResponseWriter, r *http.Request) {
 		devs, err := listBTDevices(r.Context(), a.Config().BTBridgeAddr)
 		out := map[string]any{"devices": devs}

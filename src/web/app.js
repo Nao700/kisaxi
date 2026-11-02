@@ -412,6 +412,7 @@ function showTab(name) {
   // 編集用のオブジェクトマーカーは設定タブを開いている間だけ表示
   if (name === 'settings') { objLayer.addTo(map); objDrawMarkers(); } else { objLayer.remove(); objSetPick(false); }
   if (name === 'about') loadAbout();
+  if (name === 'wx') loadWX();
   map.invalidateSize();
 }
 $$('.tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
@@ -676,7 +677,7 @@ async function loadAbout() {
 }
 
 // ---------- 設定 ----------
-const numFields = ['lat', 'lon', 'phgPower', 'phgHeight', 'phgGain', 'phgDir', 'baud', 'txDelayMs', 'localHeardMin', 'maxIsToRfPerMin', 'beaconRfMin', 'beaconIsMin', 'stationExpireMin', 'trackPoints', 'trackGapMin'];
+const numFields = ['lat', 'lon', 'phgPower', 'phgHeight', 'phgGain', 'phgDir', 'baud', 'txDelayMs', 'localHeardMin', 'maxIsToRfPerMin', 'beaconRfMin', 'beaconIsMin', 'stationExpireMin', 'trackPoints', 'trackGapMin', 'wxBaud', 'wxIsMin', 'wxRfMin'];
 function fillForm() {
   const f = $('#cfg-form');
   for (const el of f.elements) {
@@ -685,6 +686,7 @@ function fillForm() {
     else el.value = cfg[el.name];
   }
   updateTncFields();
+  updateWxFields();
   updateTrackFields();
   updateSymPreview();
   updatePhgPreview();
@@ -885,6 +887,237 @@ $('#btn-beacon').addEventListener('click', async () => {
 });
 $('#btn-center').addEventListener('click', () => map.setView([cfg.lat, cfg.lon], Math.max(map.getZoom(), 11)));
 
+// ---------- 気象タブ (自局のウェザーステーション) ----------
+let wxSnap = null;
+let wxRangeH = 24;
+const wxActive = () => $('#tab-wx').classList.contains('active');
+
+function updateWxFields() {
+  const f = $('#cfg-form');
+  const tcp = f.wxSource.value === 'davis-tcp';
+  $$('.wx-serial').forEach(e => (e.style.display = tcp ? 'none' : ''));
+  $$('.wx-tcp').forEach(e => (e.style.display = tcp ? '' : 'none'));
+  const cs = (f.callsign.value || '').trim().toUpperCase();
+  let auto = '';
+  if (cs) {
+    const base = cs.split('-')[0];
+    auto = base + (cs === base + '-13' ? '-14' : '-13');
+  }
+  $('#wx-call').placeholder = auto || '空欄で自動';
+  $('#wx-call-hint').textContent = auto
+    ? `空欄のときは ${auto} で送信します。地図には I-Gate とは別の局として表示されます。`
+    : '先に「自局」のコールサインを設定してください。';
+}
+$('#cfg-form').wxSource.addEventListener('change', updateWxFields);
+$('#cfg-form').callsign.addEventListener('input', updateWxFields);
+
+async function loadWX() {
+  try {
+    wxSnap = await api('/api/wx');
+  } catch { return; }
+  renderWX();
+}
+setInterval(() => { if (wxActive()) loadWX(); }, 30000);
+
+function renderWX() {
+  $('#wxp-off').hidden = wxSnap.enabled;
+  $('#wxp-body').hidden = !wxSnap.enabled;
+  if (!wxSnap.enabled) return;
+  renderWXState();
+  renderWXCur();
+  renderWXCharts();
+}
+
+function renderWXState() {
+  const d = (wxSnap && wxSnap.davis) || (status && status.davis);
+  const dot = $('#wxp-dot'), el = $('#wxp-state');
+  if (!d) { dot.className = 'ind'; el.textContent = '停止中'; return; }
+  if (d.connected && !d.error) {
+    dot.className = 'ind ok';
+    el.textContent = `${d.desc} に接続中` + (d.last ? ` / 最終受信 ${hhmmss(d.last)}` : '');
+  } else if (d.connected) {
+    dot.className = 'ind warn';
+    el.textContent = `${d.desc}: 応答がありません (${d.error})`;
+  } else {
+    dot.className = 'ind bad';
+    el.textContent = `${d.desc}: 未接続 ${d.error || ''}`;
+  }
+  renderWXTx();
+}
+
+function renderWXCur() {
+  const w = wxSnap && wxSnap.cur;
+  $('#wxp-cur').innerHTML = w ? wxHTML({ wx: w, wxTime: wxSnap.curT }) : '<p class="hint">まだ気象データを受信していません。</p>';
+  const parts = [];
+  if (w) {
+    if (w.luminosity != null) parts.push(`日射 ${w.luminosity} W/m²`);
+    if (w.rain24h != null) parts.push(`24時間雨量 ${w.rain24h.toFixed(1)} mm`);
+    if (w.rainMidnight != null) parts.push(`0時から ${w.rainMidnight.toFixed(1)} mm`);
+  }
+  // 本日 (0 時から) の極値。起動後に観測した分だけの集計
+  const mid = new Date(); mid.setHours(0, 0, 0, 0);
+  const today = ((wxSnap && wxSnap.history) || []).filter(p => p.t >= mid.getTime());
+  const tmax = today.filter(p => p.tempMax != null).reduce((a, p) => (a == null || p.tempMax > a.v ? { v: p.tempMax, t: p.t } : a), null);
+  const tmin = today.filter(p => p.tempMin != null).reduce((a, p) => (a == null || p.tempMin < a.v ? { v: p.tempMin, t: p.t } : a), null);
+  const gmax = today.filter(p => p.gust != null).reduce((a, p) => (a == null || p.gust > a.v ? { v: p.gust, t: p.t } : a), null);
+  const hm = t => new Date(t).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+  const ex = [];
+  if (tmax) ex.push(`最高気温 ${tmax.v.toFixed(1)} ℃ (${hm(tmax.t)})`);
+  if (tmin) ex.push(`最低気温 ${tmin.v.toFixed(1)} ℃ (${hm(tmin.t)})`);
+  if (gmax) ex.push(`最大瞬間風速 ${gmax.v.toFixed(1)} m/s (${hm(gmax.t)})`);
+  $('#wxp-extra').innerHTML = [parts.join(' / '), ex.length ? '本日: ' + ex.join(' / ') : ''].filter(Boolean).map(t => `<div>${esc(t)}</div>`).join('');
+}
+
+function renderWXTx() {
+  if (!wxSnap) return;
+  const rows = [`<div>気象局: <b>${esc(wxSnap.call || '(コールサイン未設定)')}</b></div>`];
+  if (wxSnap.lastTx) rows.push(`<div>最後の送信: ${hhmmss(wxSnap.lastTx)}</div><div class="raw">${esc(wxSnap.lastPkt || '')}</div>`);
+  else rows.push('<div>まだ送信していません。</div>');
+  const nx = [];
+  if (wxSnap.nextIs) nx.push(`APRS-IS ${hhmmss(wxSnap.nextIs)}`);
+  if (wxSnap.nextRf) nx.push(`RF ${hhmmss(wxSnap.nextRf)}`);
+  if (nx.length) rows.push(`<div>次回の送信: ${nx.join(' / ')}</div>`);
+  $('#wxp-tx').innerHTML = rows.join('');
+}
+
+$('#wxp-send').addEventListener('click', async () => {
+  const msg = $('#wxp-send-msg');
+  try {
+    wxSnap = await api('/api/wx/send', {});
+    renderWX();
+    msg.textContent = '送信しました';
+  } catch (e) {
+    msg.textContent = e.message;
+  }
+  setTimeout(() => (msg.textContent = ''), 5000);
+});
+
+$$('#wxp-range button').forEach(b => b.addEventListener('click', () => {
+  wxRangeH = Number(b.dataset.h);
+  $$('#wxp-range button').forEach(x => x.classList.toggle('active', x === b));
+  renderWXCharts();
+}));
+
+// 折れ線・棒グラフ (外部ライブラリなし)。series: {get, color, axis(0=左,1=右), bars}
+function wxChart(cv, tmin, tmax, pts, series, fmt) {
+  const dpr = window.devicePixelRatio || 1;
+  const W = cv.clientWidth || 300, H = 120;
+  cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + 'px';
+  const g = cv.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, W, H);
+  const css = getComputedStyle(document.documentElement);
+  const cMuted = css.getPropertyValue('--muted').trim(), cBorder = css.getPropertyValue('--border').trim();
+  const hasR = series.some(s => s.axis === 1);
+  const L = 38, R = hasR ? 34 : 8, T = 6, B = 18;
+  const pw = W - L - R, ph = H - T - B;
+  const X = t => L + (t - tmin) / (tmax - tmin) * pw;
+  g.font = '10px sans-serif';
+  // 軸の範囲
+  const range = [null, null];
+  for (const ax of [0, 1]) {
+    let lo = Infinity, hi = -Infinity, bars = false;
+    for (const s of series.filter(s => s.axis === ax)) {
+      if (s.bars) bars = true;
+      for (const p of pts) { const v = s.get(p); if (v != null) { lo = Math.min(lo, v); hi = Math.max(hi, v); } }
+    }
+    if (lo === Infinity) continue;
+    if (bars) lo = 0;
+    if (hi - lo < (bars ? 1 : 0.5)) { hi = lo + (bars ? 1 : 0.5); }
+    const step = Math.pow(10, Math.floor(Math.log10((hi - lo) / 4)));
+    const nice = [1, 2, 2.5, 5, 10].map(m => m * step).find(m => (hi - lo) / m <= 4) || step * 10;
+    lo = bars ? 0 : Math.floor(lo / nice) * nice; hi = Math.ceil(hi / nice) * nice;
+    range[ax] = { lo, hi, nice };
+  }
+  // 横軸の目盛り
+  const hours = (tmax - tmin) / 3600000;
+  const tickMs = hours <= 6 ? 3600000 : hours <= 24 ? 4 * 3600000 : 24 * 3600000;
+  g.strokeStyle = cBorder; g.fillStyle = cMuted; g.lineWidth = 1; g.textAlign = 'center';
+  const off = new Date().getTimezoneOffset() * 60000;
+  for (let t = Math.ceil((tmin - off) / tickMs) * tickMs + off; t <= tmax; t += tickMs) {
+    const x = Math.round(X(t)) + 0.5;
+    g.beginPath(); g.moveTo(x, T); g.lineTo(x, T + ph); g.stroke();
+    const d = new Date(t);
+    g.fillText(tickMs >= 24 * 3600000 ? `${d.getMonth() + 1}/${d.getDate()}` : `${d.getHours()}時`, x, H - 5);
+  }
+  // 縦軸の目盛り
+  for (const ax of [0, 1]) {
+    const r = range[ax];
+    if (!r) continue;
+    g.textAlign = ax === 0 ? 'right' : 'left';
+    for (let v = r.lo; v <= r.hi + r.nice / 2; v += r.nice) {
+      const y = T + ph - (v - r.lo) / (r.hi - r.lo) * ph;
+      if (ax === 0) { g.beginPath(); g.moveTo(L, Math.round(y) + 0.5); g.lineTo(L + pw, Math.round(y) + 0.5); g.stroke(); }
+      g.fillText(fmt[ax](v), ax === 0 ? L - 4 : L + pw + 4, y + 3);
+    }
+  }
+  // 系列
+  for (const s of series) {
+    const r = range[s.axis];
+    if (!r) continue;
+    const Y = v => T + ph - (v - r.lo) / (r.hi - r.lo) * ph;
+    g.strokeStyle = g.fillStyle = s.color; g.lineWidth = 1.5;
+    if (s.bars) {
+      const bw = Math.max(1, s.binMs / (tmax - tmin) * pw - 1);
+      for (const p of pts) { const v = s.get(p); if (v > 0) g.fillRect(X(p.t), Y(v), bw, T + ph - Y(v)); }
+    } else {
+      g.beginPath();
+      let pen = false, last = null;
+      for (const p of pts) {
+        const v = s.get(p);
+        if (v == null || (last != null && p.t - last > 15 * 60000)) pen = false; // 欠測や長い中断では線をつなげない
+        if (v == null) { last = null; continue; }
+        const x = X(p.t + 150000), y = Y(v);
+        if (pen) g.lineTo(x, y); else g.moveTo(x, y);
+        pen = true; last = p.t;
+      }
+      g.stroke();
+      if (last != null) { // 最新値に点を打つ (点が 1 つだけでも見える)
+        const lp = [...pts].reverse().find(p => s.get(p) != null);
+        g.beginPath(); g.arc(X(lp.t + 150000), Y(s.get(lp)), 2.5, 0, Math.PI * 2); g.fill();
+      }
+    }
+  }
+  // マウスを乗せると値を表示
+  cv.onmousemove = ev => {
+    const t = tmin + (ev.offsetX - L) / pw * (tmax - tmin);
+    let best = null;
+    for (const p of pts) if (best == null || Math.abs(p.t + 150000 - t) < Math.abs(best.t + 150000 - t)) best = p;
+    if (!best || Math.abs(best.t + 150000 - t) > 20 * 60000) { cv.title = ''; return; }
+    const d = new Date(best.t);
+    cv.title = `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}\n` +
+      series.map(s => { const v = s.get(best); return `${s.name}: ${v == null ? '—' : s.fmt(v)}`; }).join('\n');
+  };
+}
+
+function renderWXCharts() {
+  if (!wxSnap || !wxSnap.enabled) return;
+  const tmax = Date.now(), tmin = tmax - wxRangeH * 3600000;
+  const pts = (wxSnap.history || []).filter(p => p.t + 300000 >= tmin);
+  const f1 = v => v.toFixed(1);
+  const nice = v => (Math.abs(v) >= 100 ? v.toFixed(0) : String(+v.toFixed(2)));
+  wxChart($('#wxc-temp'), tmin, tmax, pts, [
+    { name: '気温', get: p => p.temp, color: '#d9480f', axis: 0, fmt: v => v.toFixed(1) + ' ℃' },
+    { name: '湿度', get: p => p.hum, color: '#1c8fc2', axis: 1, fmt: v => Math.round(v) + ' %' },
+  ], [nice, nice]);
+  wxChart($('#wxc-pres'), tmin, tmax, pts, [
+    { name: '気圧', get: p => p.pres, color: '#7048b6', axis: 0, fmt: v => v.toFixed(1) + ' hPa' },
+  ], [f1]);
+  wxChart($('#wxc-wind'), tmin, tmax, pts, [
+    { name: '最大瞬間', get: p => p.gust, color: '#e8a33a', axis: 0, fmt: v => v.toFixed(1) + ' m/s' },
+    { name: '平均', get: p => p.wind, color: '#2a9d8f', axis: 0, fmt: v => v.toFixed(1) + ' m/s' },
+  ], [nice]);
+  // 雨量は見やすい幅にまとめる (6時間: 10分 / 24時間: 30分 / 7日: 3時間)
+  const bin = (wxRangeH <= 6 ? 10 : wxRangeH <= 24 ? 30 : 180) * 60000;
+  const bins = new Map();
+  for (const p of pts) { const k = Math.floor(p.t / bin) * bin; bins.set(k, (bins.get(k) || 0) + (p.rain || 0)); }
+  const rpts = [...bins].map(([t, rain]) => ({ t, rain }));
+  wxChart($('#wxc-rain'), tmin, tmax, rpts, [
+    { name: '雨量', get: p => p.rain, color: '#2f6fd6', axis: 0, bars: true, binMs: bin, fmt: v => v.toFixed(1) + ' mm' },
+  ], [nice]);
+}
+window.addEventListener('resize', () => { if (wxActive()) renderWXCharts(); });
+
 // ---------- 起動・イベント受信 ----------
 async function init() {
   const st = await api('/api/state');
@@ -917,7 +1150,8 @@ function connectEvents() {
       case 'remove': removeStation(m.data); break;
       case 'packet': addPacket(m.data); break;
       case 'message': upsertMessage(m.data); break;
-      case 'status': status = m.data; renderStatus(); break;
+      case 'status': status = m.data; renderStatus(); if (wxActive()) renderWXState(); break;
+      case 'wx': if (wxSnap) { wxSnap.cur = m.data.cur; wxSnap.curT = m.data.t; if (wxActive()) { renderWXCur(); renderWXState(); } } break;
     }
   };
   es.onerror = () => {

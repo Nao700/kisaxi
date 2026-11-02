@@ -29,6 +29,7 @@
     <nav class="tabs">
       <button data-tab="stations" class="active">局リスト</button>
       <button data-tab="packets">パケット</button>
+      <button data-tab="wx">気象</button>
       <button data-tab="messages">メッセージ<span id="msg-badge" class="badge" hidden></span></button>
       <button data-tab="settings">設定</button>
       <button data-tab="about">このソフトについて</button>
@@ -69,6 +70,30 @@
         <button id="pkt-clear" class="small">クリア</button>
       </div>
       <div id="pkt-log" class="scroll mono"></div>
+    </section>
+
+    <section id="tab-wx" class="tab">
+      <div class="scroll wxp">
+        <p id="wxp-off" class="hint" hidden>ウェザーステーションは無効です。「設定」の「ウェザーステーション (Davis)」で有効にしてください。</p>
+        <div id="wxp-body">
+          <div class="wxp-status"><span id="wxp-dot" class="ind"></span><span id="wxp-state"></span></div>
+          <div id="wxp-cur"></div>
+          <div id="wxp-extra" class="wxp-extra"></div>
+          <div class="wxp-head">
+            <span>履歴</span>
+            <span class="wxp-range" id="wxp-range">
+              <button type="button" data-h="6">6時間</button><button type="button" data-h="24" class="active">24時間</button><button type="button" data-h="168">7日</button>
+            </span>
+          </div>
+          <div class="wxp-chart"><div class="wxp-title">気温 (℃) / 湿度 (%)</div><canvas id="wxc-temp"></canvas></div>
+          <div class="wxp-chart"><div class="wxp-title">気圧 (hPa)</div><canvas id="wxc-pres"></canvas></div>
+          <div class="wxp-chart"><div class="wxp-title">風速 (m/s)</div><canvas id="wxc-wind"></canvas></div>
+          <div class="wxp-chart"><div class="wxp-title">雨量 (mm)</div><canvas id="wxc-rain"></canvas></div>
+          <div class="wxp-head"><span>送信</span></div>
+          <div id="wxp-tx" class="wxp-tx"></div>
+          <div class="actions"><button type="button" id="wxp-send">今すぐ送信</button><span id="wxp-send-msg" class="hint"></span></div>
+        </div>
+      </div>
     </section>
 
     <section id="tab-messages" class="tab">
@@ -289,6 +314,39 @@
             <label class="chk"><input type="checkbox" name="beaconIs"> APRS-IS ビーコン</label>
             <label>間隔 (分) <input name="beaconIsMin" type="number" min="5"></label>
           </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>ウェザーステーション (Davis)</legend>
+          <label class="chk"><input type="checkbox" name="wxEnabled"> Davis のウェザーステーションから気象データを読み取る</label>
+          <label>接続方式
+            <select name="wxSource">
+              <option value="davis-serial">USB / シリアルのデータロガー (6510USB・6510SER)</option>
+              <option value="davis-tcp">WeatherLinkIP (ネットワーク)</option>
+            </select>
+          </label>
+          <div class="wx-serial">
+            <div class="row">
+              <label>ポート <input name="wxSerialPort" list="ports" placeholder="COM4 / /dev/ttyUSB1"></label>
+              <label>速度
+                <select name="wxBaud">
+                  <option>9600</option><option>19200</option><option>38400</option><option>57600</option><option>115200</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <label class="wx-tcp">アドレス:ポート <input name="wxTcpAddr" placeholder="192.168.0.50:22222"></label>
+          <label>気象局のコールサイン-SSID <input name="wxCall" id="wx-call" maxlength="9" placeholder="空欄で自動"></label>
+          <p class="hint" id="wx-call-hint"></p>
+          <div class="row">
+            <label class="chk"><input type="checkbox" name="wxIs"> APRS-IS に送信</label>
+            <label>間隔 (分) <input name="wxIsMin" type="number" min="5"></label>
+          </div>
+          <div class="row">
+            <label class="chk"><input type="checkbox" name="wxRf"> RF にも送信</label>
+            <label>間隔 (分) <input name="wxRfMin" type="number" min="5"></label>
+          </div>
+          <p class="hint">コンソールにつないだデータロガーから約 2 秒ごとに現在値を読み取り、自局とは別の SSID の気象局として位置付きの APRS WX パケットを送ります (RF の送信パスはビーコンと同じ)。TNC 用とは別のシリアルポートを指定してください。WeatherLink など他のソフトが同じロガーを使っていると読み取れません。気圧はコンソールが標高補正した海面気圧を、雨量は 0.01 インチ単位の雨量計の値を使います。1 時間・24 時間雨量と突風 (過去 5 分間の最大風速) は読み取った値から積算するため、起動直後は実際より少なくなります。</p>
         </fieldset>
 
         <fieldset>

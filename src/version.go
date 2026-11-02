@@ -4,7 +4,7 @@ package main
 
 const (
 	softwareName    = "APRSIGate"
-	softwareVersion = "1.0.7"
+	softwareVersion = "1.0.8"
 	developedBy     = "Developed by JR2TTA Nao feat.Claude"
 )
 
@@ -15,6 +15,15 @@ type ChangeEntry struct {
 }
 
 var changelog = []ChangeEntry{
+	{
+		Version: "1.0.8",
+		Date:    "2026-10-29",
+		Changes: []string{
+			"ウェザーステーション (Davis) に対応。Vantage Pro2 / Vue のコンソールにつないだ USB・シリアルのデータロガー、または WeatherLinkIP から約 2 秒ごとに現在値 (気温・湿度・気圧・風向・風速・雨量・日射) を読み取ります。設定の「ウェザーステーション (Davis)」で有効にします",
+			"読み取った気象データを、自局とは別の SSID (既定は自局コールに -13) の位置付き APRS WX パケットとして送信します。APRS-IS (既定 5 分間隔) と RF (既定 30 分間隔、オフ可) を別々に設定でき、地図にも自局の気象局として表示します",
+			"「気象」タブを追加。現在値、本日の最高・最低気温と最大瞬間風速、気温・湿度・気圧・風速・雨量のグラフ (6 時間 / 24 時間 / 7 日) と送信状況を表示し、「今すぐ送信」で手動送信もできます。履歴は再起動後も引き継ぎます",
+		},
+	},
 	{
 		Version: "1.0.7",
 		Date:    "2026-10-29",

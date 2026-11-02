@@ -311,3 +311,29 @@ body.nolabels .stn-icon .label { display: none; }
   .settings .row > label { min-width: 8em; }
   #toast { bottom: 76px; max-width: calc(100vw - 32px); }
 }
+
+/* 気象タブ */
+.wxp { padding: 8px 10px 10px; }
+.wxp-status { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.wxp-status .ind { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--border); flex: none; }
+.wxp-status .ind.ok { background: var(--ok); }
+.wxp-status .ind.warn { background: var(--warn); }
+.wxp-status .ind.bad { background: var(--bad); }
+.wxp .wx-head { color: var(--text); }
+.wxp .wx-time { color: var(--muted); }
+.wxp .wx-tile { background: var(--bg); border-color: var(--border); }
+.wxp .wx-label, .wxp .wx-sub { color: var(--muted); }
+.wxp .wx-val { color: var(--text); }
+.wxp-extra { font-size: 12px; color: var(--muted); margin: 6px 0 4px; display: flex; flex-direction: column; gap: 2px; }
+.wxp-head { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 12px; margin: 12px 0 4px; }
+.wxp-range { display: inline-flex; }
+.wxp-range button { font-size: 11px; padding: 2px 8px; border-radius: 0; margin-left: -1px; }
+.wxp-range button:first-child { border-radius: 4px 0 0 4px; margin-left: 0; }
+.wxp-range button:last-child { border-radius: 0 4px 4px 0; }
+.wxp-range button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.wxp-chart { margin-bottom: 8px; }
+.wxp-title { font-size: 11px; color: var(--muted); }
+.wxp-chart canvas { width: 100%; display: block; }
+.wxp-tx { font-size: 12px; display: flex; flex-direction: column; gap: 3px; }
+.wxp-tx .raw { font-family: Consolas, monospace; font-size: 11px; word-break: break-all; color: var(--muted); }
+.wxp .actions { position: static; }

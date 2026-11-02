@@ -3,8 +3,11 @@ package main
 // APRS 気象データの解析。単位は SI に換算して保持する (風速 m/s、気温 ℃、雨量 mm、気圧 hPa)。
 
 import (
+	"fmt"
+	"math"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Weather struct {
@@ -136,4 +139,69 @@ func finishWX(w *Weather, found bool, rest string) (*Weather, string) {
 		return nil, rest
 	}
 	return w, strings.TrimSpace(rest)
+}
+
+// ---------- 送信用の組み立て (parseWeather の逆変換) ----------
+
+func roundClamp(v float64, lo, hi int) int {
+	n := int(math.Round(v))
+	if n < lo {
+		return lo
+	}
+	if n > hi {
+		return hi
+	}
+	return n
+}
+
+// wxData は気象データ部 "ddd/sssgGGGtTTTrRRRpPPPPPPhHHbBBBBBLLLL" を作る。
+// 風向・風速・突風・気温は必須項目なので、欠測のときは "..." にする。それ以外は欠測なら省く。
+func wxData(w *Weather) string {
+	var b strings.Builder
+	if w.WindDir != nil && w.Wind != nil {
+		fmt.Fprintf(&b, "%03d/%03d", roundClamp(float64(*w.WindDir), 1, 360), roundClamp(*w.Wind/mphToMs, 0, 999))
+	} else {
+		b.WriteString(".../...")
+	}
+	if w.Gust != nil {
+		fmt.Fprintf(&b, "g%03d", roundClamp(*w.Gust/mphToMs, 0, 999))
+	} else {
+		b.WriteString("g...")
+	}
+	if w.Temp != nil {
+		fmt.Fprintf(&b, "t%03d", roundClamp(*w.Temp*9/5+32, -99, 999))
+	} else {
+		b.WriteString("t...")
+	}
+	if w.Rain1h != nil {
+		fmt.Fprintf(&b, "r%03d", roundClamp(*w.Rain1h/inch100Mm, 0, 999))
+	}
+	if w.Rain24h != nil {
+		fmt.Fprintf(&b, "p%03d", roundClamp(*w.Rain24h/inch100Mm, 0, 999))
+	}
+	if w.RainMidnight != nil {
+		fmt.Fprintf(&b, "P%03d", roundClamp(*w.RainMidnight/inch100Mm, 0, 999))
+	}
+	if w.Humidity != nil {
+		h := roundClamp(float64(*w.Humidity), 1, 100)
+		fmt.Fprintf(&b, "h%02d", h%100) // 100% は "00"
+	}
+	if w.Pressure != nil {
+		fmt.Fprintf(&b, "b%05d", roundClamp(*w.Pressure*10, 0, 99999))
+	}
+	if w.Luminosity != nil {
+		if l := *w.Luminosity; l < 1000 {
+			fmt.Fprintf(&b, "L%03d", roundClamp(float64(l), 0, 999))
+		} else {
+			fmt.Fprintf(&b, "l%03d", roundClamp(float64(l-1000), 0, 999))
+		}
+	}
+	return b.String()
+}
+
+// wxPacketBody は位置・時刻付きの気象パケット本文を作る。
+// 例: @151230z3540.87N/13946.03E_220/004g009t064r000p012P004h72b10132L450eKSXI
+func wxPacketBody(lat, lon float64, w *Weather, now time.Time) string {
+	u := now.UTC()
+	return fmt.Sprintf("@%02d%02d%02dz%s/%s_%seKSXI", u.Day(), u.Hour(), u.Minute(), formatLat(lat), formatLon(lon), wxData(w))
 }
