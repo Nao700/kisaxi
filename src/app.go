@@ -238,6 +238,14 @@ func (a *App) handleRF(line string) {
 	if sameCall(p.Src, cfg.Callsign) {
 		return // 自局の送信がデジピートされて戻ってきたもの
 	}
+	if p.Type == "thirdparty" && len(p.Info) > 1 {
+		if ip, err := ParseTNC2(p.Info[1:]); err == nil && noRF(cfg.NoRFCalls, ip.Src) {
+			return
+		}
+	}
+	if noRF(cfg.NoRFCalls, p.Src) {
+		return // 除外局: 受信を完全に無視する
+	}
 	a.hmu.Lock()
 	a.rfHeard[strings.ToUpper(p.Src)] = time.Now()
 	a.hmu.Unlock()
@@ -275,8 +283,8 @@ func (a *App) onISLine(line string) {
 			p = ip
 		}
 	}
-	if sameCall(p.Src, cfg.Callsign) {
-		return
+	if sameCall(p.Src, cfg.Callsign) || noRF(cfg.NoRFCalls, p.Src) {
+		return // 除外局: 受信を完全に無視する
 	}
 	a.updateStation(p, "IS")
 	a.handleMessage(p, "IS")
@@ -383,6 +391,9 @@ func (a *App) heardOnRF(call string, within time.Duration) bool {
 // gateToRF は APRS-IS から受けたメッセージのうち、宛先がローカル(RF)で最近受信された局のものを RF へ送る。
 func (a *App) gateToRF(p *Packet, cfg Config) {
 	if p.Type != "message" || p.MsgTo == "" {
+		return
+	}
+	if noRF(cfg.NoRFCalls, p.Src) || noRF(cfg.NoRFCalls, p.MsgTo) {
 		return
 	}
 	_, tnc := a.clients()
@@ -558,6 +569,9 @@ func (a *App) SendMessage(to, text string) (*Message, error) {
 	to = strings.ToUpper(strings.TrimSpace(to))
 	if to == "" || len(to) > 9 {
 		return nil, fmt.Errorf("宛先が正しくありません")
+	}
+	if noRF(cfg.NoRFCalls, to) {
+		return nil, fmt.Errorf("%s は「除外局」に指定されているため送信できません", to)
 	}
 	text = sanitizeMsgText(text)
 	if text == "" {

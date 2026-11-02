@@ -565,3 +565,31 @@ func sameCall(a, b string) bool {
 	b = strings.TrimSuffix(strings.ToUpper(b), "-0")
 	return a == b
 }
+
+// noRF は call が「RF へ送らない局」リストに該当するかを返す。
+// リストはカンマ区切り (正規化済み)。SSID なしは全 SSID、末尾 * は前方一致、それ以外は完全一致。
+func noRF(list, call string) bool {
+	call = strings.TrimSuffix(strings.ToUpper(strings.TrimSpace(call)), "-0")
+	if list == "" || call == "" {
+		return false
+	}
+	for _, e := range strings.Split(list, ",") {
+		e = strings.TrimSuffix(strings.TrimSpace(e), "-0")
+		switch {
+		case e == "":
+		case strings.HasSuffix(e, "*"):
+			if strings.HasPrefix(call, strings.TrimSuffix(e, "*")) {
+				return true
+			}
+		case strings.Contains(e, "-"):
+			if call == e {
+				return true
+			}
+		default:
+			if call == e || strings.HasPrefix(call, e+"-") {
+				return true
+			}
+		}
+	}
+	return false
+}
