@@ -82,6 +82,12 @@ class BridgeService : Service() {
         if (wifi?.isHeld == true) wifi?.release()
     }
 
+    private fun dnsServers(): String = try {
+        val cm = getSystemService(android.net.ConnectivityManager::class.java)
+        cm.getLinkProperties(cm.activeNetwork)?.dnsServers?.mapNotNull { it.hostAddress }
+            ?.filter { !it.contains(":") }?.joinToString(",") ?: ""
+    } catch (_: Exception) { "" }
+
     /** Go を起動し、落ちたら 3 秒後に再起動する (停止されるまで)。 */
     private fun startGo() {
         val bin = File(applicationInfo.nativeLibraryDir, "libkisaxi.so")
@@ -89,8 +95,10 @@ class BridgeService : Service() {
         while (running) {
             try {
                 // -listen 0.0.0.0: Tailscale 経由で別端末のブラウザから開けるようにする。LAN に出したくなければ tailnet の IP を指定する。
-                goProc = ProcessBuilder(bin.path, "-config", cfg.path, "-listen", "0.0.0.0:8073", "-nobrowser")
-                    .redirectErrorStream(true).start()
+                val pb = ProcessBuilder(bin.path, "-config", cfg.path, "-listen", "0.0.0.0:8073", "-nobrowser")
+                    .redirectErrorStream(true)
+                pb.environment()["KISAXI_DNS"] = dnsServers() // Android には resolv.conf がないので、端末の DNS を渡す
+                goProc = pb.start()
                 goProc!!.inputStream.bufferedReader().forEachLine { android.util.Log.i("kisaxi", it) }
                 goProc!!.waitFor()
             } catch (e: Exception) { android.util.Log.e("kisaxi", "go failed", e) }
