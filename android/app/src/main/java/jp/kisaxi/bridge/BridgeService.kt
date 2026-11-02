@@ -4,7 +4,11 @@ import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
+import android.content.Context
+import android.net.wifi.WifiManager
+import android.os.PowerManager
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothSocket
 import android.content.Intent
@@ -31,17 +35,37 @@ class BridgeService : Service() {
     private var bt: BluetoothSocket? = null
     private var kissServer: ServerSocket? = null
     private var goProc: Process? = null
-    @Volatile private var running = false
+    private var httpServer: ServerSocket? = null
+    private var wake: PowerManager.WakeLock? = null
+    private var wifi: WifiManager.WifiLock? = null
+
+    companion object {
+        const val ACTION_STOP = "jp.kisaxi.bridge.STOP"
+        @Volatile var running = false
+    }
 
     override fun onBind(i: Intent?): IBinder? = null
 
     override fun onStartCommand(i: Intent?, f: Int, id: Int): Int {
+        if (i?.action == ACTION_STOP) { // キルスイッチ: 通知の「停止」ボタンと画面の「停止」
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+            return START_NOT_STICKY
+        }
         if (running) return START_STICKY
         running = true
+        // 画面オフ中も CPU と Wi-Fi を止めない (APRS-IS / Tailscale の接続維持)
+        wake = getSystemService(PowerManager::class.java).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "kisaxi:bridge").apply { acquire() }
+        wifi = (applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager)
+            .createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "kisaxi:bridge").apply { acquire() }
         val ch = NotificationChannel("kisaxi", "KISAXI", NotificationManager.IMPORTANCE_LOW)
         getSystemService(NotificationManager::class.java).createNotificationChannel(ch)
         val n = Notification.Builder(this, "kisaxi").setContentTitle("KISAXI 動作中")
-            .setSmallIcon(android.R.drawable.stat_sys_data_bluetooth).build()
+            .setSmallIcon(android.R.drawable.stat_sys_data_bluetooth)
+            .addAction(Notification.Action.Builder(null, "停止",
+                PendingIntent.getService(this, 0, Intent(this, BridgeService::class.java).setAction(ACTION_STOP),
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)).build())
+            .build()
         startForeground(1, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
         thread { httpLoop() }
         thread { startGo() }
@@ -50,16 +74,28 @@ class BridgeService : Service() {
 
     override fun onDestroy() {
         running = false
-        closeBt(); kissServer?.close(); goProc?.destroy()
+        closeBt()
+        try { kissServer?.close() } catch (_: Exception) {}
+        try { httpServer?.close() } catch (_: Exception) {}
+        goProc?.destroy()
+        if (wake?.isHeld == true) wake?.release()
+        if (wifi?.isHeld == true) wifi?.release()
     }
 
+    /** Go を起動し、落ちたら 3 秒後に再起動する (停止されるまで)。 */
     private fun startGo() {
         val bin = File(applicationInfo.nativeLibraryDir, "libkisaxi.so")
         val cfg = File(filesDir, "aprsigate.json")
-        // -listen 0.0.0.0: Tailscale 経由で別端末のブラウザから開けるようにする。LAN に出したくなければ tailnet の IP を指定する。
-        goProc = ProcessBuilder(bin.path, "-config", cfg.path, "-listen", "0.0.0.0:8073", "-nobrowser")
-            .redirectErrorStream(true).start()
-        goProc!!.inputStream.bufferedReader().forEachLine { android.util.Log.i("kisaxi", it) }
+        while (running) {
+            try {
+                // -listen 0.0.0.0: Tailscale 経由で別端末のブラウザから開けるようにする。LAN に出したくなければ tailnet の IP を指定する。
+                goProc = ProcessBuilder(bin.path, "-config", cfg.path, "-listen", "0.0.0.0:8073", "-nobrowser")
+                    .redirectErrorStream(true).start()
+                goProc!!.inputStream.bufferedReader().forEachLine { android.util.Log.i("kisaxi", it) }
+                goProc!!.waitFor()
+            } catch (e: Exception) { android.util.Log.e("kisaxi", "go failed", e) }
+            if (running) Thread.sleep(3000)
+        }
     }
 
     @SuppressLint("MissingPermission")
@@ -100,8 +136,9 @@ class BridgeService : Service() {
     /** 依存を増やさないための極小 HTTP サーバー (127.0.0.1 のみ)。 */
     private fun httpLoop() {
         val srv = ServerSocket(8074, 8, InetAddress.getByName("127.0.0.1"))
+        httpServer = srv
         while (running) {
-            val c = srv.accept()
+            val c = try { srv.accept() } catch (_: Exception) { break }
             thread {
                 c.use {
                     val line = it.getInputStream().bufferedReader().readLine() ?: return@thread
