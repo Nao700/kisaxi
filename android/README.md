@@ -8,3 +8,4 @@ Tailscale 越しに見る場合は、別端末のブラウザで `http://<端末
 
 ビルド: `GOOS=android GOARCH=arm64 CGO_ENABLED=0 go build -o android/app/src/main/jniLibs/arm64-v8a/libkisaxi.so ./src` のあと、Android Studio / Gradle で APK を作る。
 **この環境には Android SDK がなく、APK のビルドも実機での動作確認も未実施。**
+※ kisaxi-debug.keystore は debug 用 (パスワード android)。配布用の署名には使わないこと。

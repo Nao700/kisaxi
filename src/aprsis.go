@@ -30,9 +30,27 @@ type ISClient struct {
 	st  ISStatus
 }
 
+// effectiveISFilter は APRS-IS に送るフィルターを返す。
+// m/距離 は「サーバーが知っている自局の位置から」の範囲だが、パスコード -1 (受信専用) では位置パケットを
+// 送れず、サーバーが位置を知らないため何も流れてこない。受信専用で自局の緯度経度が設定済みなら、
+// m/距離 を r/緯度/経度/距離 に置き換える。
+func effectiveISFilter(cfg Config) string {
+	f := strings.TrimSpace(cfg.ISFilter)
+	if f == "" || cfg.Passcode != "-1" || (cfg.Lat == 0 && cfg.Lon == 0) {
+		return f
+	}
+	parts := strings.Fields(f)
+	for i, p := range parts {
+		if strings.HasPrefix(p, "m/") && len(p) > 2 {
+			parts[i] = fmt.Sprintf("r/%.4f/%.4f/%s", cfg.Lat, cfg.Lon, p[2:])
+		}
+	}
+	return strings.Join(parts, " ")
+}
+
 func NewISClient(cfg Config, onLine func(string), onStatus func()) *ISClient {
 	login := fmt.Sprintf("user %s pass %s vers %s %s", cfg.Callsign, cfg.Passcode, softwareName, softwareVersion)
-	if f := strings.TrimSpace(cfg.ISFilter); f != "" {
+	if f := effectiveISFilter(cfg); f != "" {
 		login += " filter " + f
 	}
 	return &ISClient{server: cfg.ISServer, login: login, onLine: onLine, onStatus: onStatus, out: make(chan string, 200)}
