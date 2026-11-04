@@ -4,7 +4,7 @@ package main
 
 const (
 	softwareName    = "APRSIGate"
-	softwareVersion = "1.0.9"
+	softwareVersion = "1.0.10"
 	developedBy     = "Developed by JR2TTA Nao feat.Claude"
 )
 
@@ -15,6 +15,13 @@ type ChangeEntry struct {
 }
 
 var changelog = []ChangeEntry{
+	{
+		Version: "1.0.10",
+		Date:    "2026-11-04",
+		Changes: []string{
+			"地図上で重なっているアイコンをクリックすると、放射状に広がって1局ずつ選べるようにしました。広がった後にアイコンをクリックすると、その局の情報が開きます。地図の空白をクリック・拡大縮小・Esc キーで元に戻ります",
+		},
+	},
 	{
 		Version: "1.0.9",
 		Date:    "2026-11-02",
