@@ -159,6 +159,53 @@ function popupHTML(s) {
   return `<div class="popup"><h3>${symHTML(s.sym)} ${esc(s.call)}</h3>${wxHTML(s)}<table>${rows.join('')}</table><div class="raw">${esc(s.raw)}</div>${msgBtn}</div>`;
 }
 
+// ---------- 重なったアイコンを広げる ----------
+const SPIDER_HIT_PX = 16; // 画面上でこの距離以内にあるアイコンは「重なっている」とみなす
+const spiderLayer = L.layerGroup().addTo(map);
+let spider = null; // { items: Map(call -> 元の位置) }
+
+function spiderCollapse() {
+  if (!spider) return;
+  for (const [call, ll] of spider.items) {
+    const x = stations.get(call);
+    if (x && x.marker) x.marker.setLatLng(ll);
+  }
+  spiderLayer.clearLayers();
+  spider = null;
+}
+
+function onMarkerClick(call) {
+  const e = stations.get(call);
+  if (!e || !e.marker) return;
+  if (spider && spider.items.has(call)) { e.marker.openPopup(); return; }
+  spiderCollapse();
+  const here = map.latLngToContainerPoint(e.marker.getLatLng());
+  const group = [];
+  for (const [c, x] of stations) {
+    if (!x.marker || !markerLayer.hasLayer(x.marker)) continue;
+    if (map.latLngToContainerPoint(x.marker.getLatLng()).distanceTo(here) <= SPIDER_HIT_PX) group.push(c);
+  }
+  if (group.length < 2) { e.marker.openPopup(); return; }
+  map.closePopup();
+  const n = group.length;
+  const radius = Math.max(36, 11 * n);
+  spider = { items: new Map() };
+  const center = e.marker.getLatLng();
+  group.forEach((c, i) => {
+    const x = stations.get(c);
+    const orig = x.marker.getLatLng();
+    const a = -Math.PI / 2 + (2 * Math.PI * i) / n;
+    const pt = here.add(L.point(Math.cos(a) * radius, Math.sin(a) * radius));
+    const ll = map.containerPointToLatLng(pt);
+    spider.items.set(c, orig);
+    x.marker.setLatLng(ll);
+    L.polyline([center, ll], { color: '#555', weight: 1.5, opacity: 0.8, interactive: false }).addTo(spiderLayer);
+  });
+  L.circleMarker(center, { radius: 3, color: '#555', fillColor: '#555', fillOpacity: 1, weight: 1, interactive: false }).addTo(spiderLayer);
+}
+map.on('zoomstart', spiderCollapse);
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape') spiderCollapse(); });
+
 function stationVisible(s) {
   if (!$('#opt-mapfilter').checked) return true;
   return matchFilter(s);
@@ -170,6 +217,7 @@ function drawStation(call) {
   const s = e.s;
   const show = s.hasPos && !s.killed && stationVisible(s);
   if (!show) {
+    if (spider && spider.items.has(call)) spiderCollapse();
     if (e.marker) { markerLayer.removeLayer(e.marker); e.marker = null; }
     if (e.track) { trackLayer.removeLayer(e.track); e.track = null; }
     if (e.ambig) { ambigLayer.removeLayer(e.ambig); e.ambig = null; }
@@ -180,12 +228,15 @@ function drawStation(call) {
     e.marker = L.marker([s.lat, s.lon], { icon: makeIcon(s), zIndexOffset: s.via === 'LOCAL' ? 1000 : 0 });
     e.marker.bindPopup(() => popupHTML(stations.get(call).s), { maxWidth: 380, minWidth: s.wx ? 330 : 50 });
     e.marker.addTo(markerLayer);
+    // 重なったアイコンはクリックで放射状に広げ、広げた後のクリックで個別のポップアップを開く
+    e.marker.off('click', e.marker._openPopup, e.marker);
+    e.marker.on('click', () => onMarkerClick(call));
     // 位置あいまいの範囲は、マーカーにカーソルを乗せている間 (とポップアップ表示中) だけ描く
     e.marker.on('mouseover', () => { const x = stations.get(call); if (x && x.ambig) ambigLayer.addLayer(x.ambig); });
     e.marker.on('mouseout', () => { const x = stations.get(call); if (x && x.ambig && !x.marker.isPopupOpen()) ambigLayer.removeLayer(x.ambig); });
     e.marker.on('popupclose', () => { const x = stations.get(call); if (x && x.ambig) ambigLayer.removeLayer(x.ambig); });
   } else {
-    e.marker.setLatLng([s.lat, s.lon]);
+    if (!(spider && spider.items.has(call))) e.marker.setLatLng([s.lat, s.lon]);
     if (e.iconKey !== iconKey) e.marker.setIcon(makeIcon(s));
     if (e.marker.isPopupOpen()) e.marker.setPopupContent(popupHTML(s));
   }
@@ -241,6 +292,7 @@ function upsertStation(s) {
 function removeStation(call) {
   const e = stations.get(call);
   if (!e) return;
+  if (spider && spider.items.has(call)) spiderCollapse();
   if (e.marker) markerLayer.removeLayer(e.marker);
   if (e.track) trackLayer.removeLayer(e.track);
   if (e.ambig) ambigLayer.removeLayer(e.ambig);
@@ -254,6 +306,7 @@ map.on('popupopen', ev => {
 });
 
 map.on('click', ev => {
+  spiderCollapse();
   if (objPicking) {
     objSetPos(ev.latlng.lat, ev.latlng.lng);
     objSetPick(false);
