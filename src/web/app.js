@@ -32,6 +32,10 @@ function hhmmss(ms) {
   const d = new Date(ms);
   return d.toLocaleTimeString('ja-JP', { hour12: false });
 }
+function mdhhmmss(ms) {
+  const d = new Date(ms);
+  return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + hhmmss(ms);
+}
 function distKm(lat1, lon1, lat2, lon2) {
   const r = Math.PI / 180;
   const a = Math.sin((lat2 - lat1) * r / 2) ** 2 + Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.sin((lon2 - lon1) * r / 2) ** 2;
@@ -415,7 +419,7 @@ function renderMessages() {
       else st = `送信中 (${m.tries}回)`;
     }
     const who = m.dir === 'in' ? `<b data-to="${esc(m.from)}">${esc(m.from)}</b> → 自局` : `自局 → <b data-to="${esc(m.to)}">${esc(m.to)}</b>`;
-    return `<div class="msg ${m.dir}"><div class="meta">${who} · ${hhmmss(m.time)} · ${esc(m.via || '')} ${st}</div><div class="text">${esc(m.text)}</div></div>`;
+    return `<div class="msg ${m.dir}"><div class="meta">${who} · ${mdhhmmss(m.time)} · ${esc(m.via || '')} ${st}</div><div class="text">${esc(m.text)}</div></div>`;
   }).join('') || '<p class="hint">メッセージはまだありません。</p>';
   if (atBottom) el.scrollTop = el.scrollHeight;
 }
