@@ -143,6 +143,42 @@ function wxHTML(s) {
   return `<div class="wx"><div class="wx-head"><span>気象情報</span><span class="wx-time">${t}</span></div><div class="wx-grid">${cells}</div></div>`;
 }
 
+// ---------- PHG デコードと機種判定 ----------
+// PHG 数値の意味は APRS101 第 7 章。通達範囲 (km) の式は phgInfo と同じ。
+function decodePhg(comment) {
+  const m = /PHG(\d)(\d)(\d)(\d)/.exec(comment || '');
+  if (!m) return null;
+  const [p, h, g, d] = m.slice(1).map(Number);
+  const hft = 10 * 2 ** h;
+  const km = Math.sqrt(2 * hft * Math.sqrt((p * p) / 10 * (10 ** (g / 10)) / 2)) * 1.609344;
+  return { w: p * p, ft: hft, m: hft * 0.3048, g, dir: d * 45, km };
+}
+function phgText(r) {
+  return `${r.w} W / 高さ ${Math.round(r.m)} m (${r.ft} ft) / 利得 ${r.g} dBi / ${r.dir ? r.dir + '° 指向' : '無指向'} → 通達範囲 約 ${r.km.toFixed(1)} km`;
+}
+// 宛先 (TOCALL) から機種・ソフトを引く表。長い前置一致が優先。aprs-deviceid の一部のみ。
+const TOCALLS = {
+  APKSXI: 'KISAXI',
+  APDW: 'Dire Wolf',
+  APDR: 'APRSdroid',
+  APAT: 'AnyTone',
+  APRX: 'Aprx',
+  APWW: 'APRSIS32',
+  APOT: 'Argent Data OpenTracker',
+  APTT: 'TinyTrak',
+  APU25N: 'UI-View32',
+  APK: 'Kenwood 無線機',
+  API: 'ICOM 無線機',
+  APY: 'YAESU 無線機',
+};
+function deviceName(raw) {
+  const m = /^[^>]+>([^,:]+)[^:]*:(.)/.exec(raw || '');
+  if (!m || m[2] === "'" || m[2] === '`') return ''; // Mic-E は宛先に位置が入っているので判定しない
+  const dst = m[1].toUpperCase();
+  const k = Object.keys(TOCALLS).filter(k => dst.startsWith(k)).sort((a, b) => b.length - a.length)[0];
+  return k ? TOCALLS[k] : '';
+}
+
 function popupHTML(s) {
   const rows = [];
   const add = (k, v) => { if (v !== '' && v != null) rows.push(`<tr><td>${k}</td><td>${v}</td></tr>`); };
@@ -156,6 +192,9 @@ function popupHTML(s) {
   if (s.hasAlt) add('高度', `${Math.round(s.alt)} m`);
   if (s.micE) add('Mic-E', esc(s.micE));
   add('コメント', esc(s.comment));
+  const phg = decodePhg(s.comment);
+  if (phg) add('PHG', esc(phgText(phg)));
+  add('機種/ソフト', esc(deviceName(s.raw)));
   add('ステータス', esc(s.status));
   add('経由', `<span class="via-${esc(s.via)}">${esc(s.via)}</span>` + (s.path ? ' ' + esc(s.path) : ''));
   add('最終受信', `${new Date(s.last).toLocaleString('ja-JP')} (${ago(s.last)}前) / ${s.count}回`);
