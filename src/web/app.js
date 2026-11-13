@@ -156,27 +156,25 @@ function decodePhg(comment) {
 function phgText(r) {
   return `${r.w} W / 高さ ${Math.round(r.m)} m (${r.ft} ft) / 利得 ${r.g} dBi / ${r.dir ? r.dir + '° 指向' : '無指向'} → 通達範囲 約 ${r.km.toFixed(1)} km`;
 }
-// 宛先 (TOCALL) から機種・ソフトを引く表。長い前置一致が優先。aprs-deviceid の一部のみ。
-const TOCALLS = {
-  APKSXI: 'KISAXI',
-  APDW: 'Dire Wolf',
-  APDR: 'APRSdroid',
-  APAT: 'AnyTone',
-  APRX: 'Aprx',
-  APWW: 'APRSIS32',
-  APOT: 'Argent Data OpenTracker',
-  APTT: 'TinyTrak',
-  APU25N: 'UI-View32',
-  APK: 'Kenwood 無線機',
-  API: 'ICOM 無線機',
-  APY: 'YAESU 無線機',
-};
+// 宛先 (TOCALL) から機種・ソフトを引く。表は tocalls.json (aprs-deviceid、scripts/update-tocalls.py で更新)。
+// パターンの ? は任意の1文字、* は任意の文字列。ワイルドカードが少なく文字数の多いものを優先する。
+let tocallRules = [];
+let tocallClasses = {};
+fetch('tocalls.json').then(r => r.json()).then(j => {
+  tocallClasses = j.classes || {};
+  tocallRules = j.tocalls.map(([pat, vendor, model, cls]) => ({
+    re: new RegExp('^' + pat.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\?/g, '.').replace(/\*/g, '.*') + '$'),
+    wild: (pat.match(/[?*]/g) || []).length, len: pat.length, vendor, model, cls,
+  })).sort((x, y) => x.wild - y.wild || y.len - x.len);
+}).catch(() => {});
 function deviceName(raw) {
   const m = /^[^>]+>([^,:]+)[^:]*:(.)/.exec(raw || '');
   if (!m || m[2] === "'" || m[2] === '`') return ''; // Mic-E は宛先に位置が入っているので判定しない
   const dst = m[1].toUpperCase();
-  const k = Object.keys(TOCALLS).filter(k => dst.startsWith(k)).sort((a, b) => b.length - a.length)[0];
-  return k ? TOCALLS[k] : '';
+  const r = tocallRules.find(r => r.re.test(dst));
+  if (!r) return '';
+  const cls = tocallClasses[r.cls];
+  return [r.vendor, r.model].filter(Boolean).join(' ') + (cls ? ` (${cls})` : '');
 }
 
 function popupHTML(s) {
