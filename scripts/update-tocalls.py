@@ -8,9 +8,18 @@ import json, sys, yaml
 MAKERS = {'Kenwood', 'Yaesu', 'Icom', 'AnyTone', 'BTECH', 'Retevis', 'Alinco', 'Byonics', 'Argent Data Systems',
           'SharkRF', 'Mobilinkd LLC', 'Painter Engineering', 'TAPR', 'Altus Metrum', 'SainSonic', 'BigRedBee'}
 d = yaml.safe_load(open(sys.argv[1], encoding='utf-8'))
+def vendor(v):
+    for m in MAKERS:
+        if (v or '').lower() == m.lower():
+            return m
+    return ''
+
 out = {
     "source": "aprs-deviceid (https://github.com/aprsorg/aprs-deviceid) by Hessu OH7LZB, CC BY-SA 2.0",
     "classes": {c['class']: c['shown'] for c in d['classes']},
-    "tocalls": [[t['tocall'], t.get('vendor', '') if t.get('vendor') in MAKERS else '', t.get('model', ''), t.get('class', '')] for t in d['tocalls']],
+    # Mic-E: 新方式はコメント末尾2文字 (suffix)、旧方式はコメント先頭 (prefix) と末尾1文字 (suffix)
+    "mice": [[x['suffix'], vendor(x.get('vendor')), x.get('model', ''), x.get('class', '')] for x in d['mice']],
+    "micelegacy": [[x['prefix'], x.get('suffix', ''), vendor(x.get('vendor')), x.get('model', ''), x.get('class', '')] for x in d['micelegacy']],
+    "tocalls": [[t['tocall'], vendor(t.get('vendor')), t.get('model', ''), t.get('class', '')] for t in d['tocalls']],
 }
 json.dump(out, open('src/web/tocalls.json', 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))

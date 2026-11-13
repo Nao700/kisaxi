@@ -160,21 +160,36 @@ function phgText(r) {
 // パターンの ? は任意の1文字、* は任意の文字列。ワイルドカードが少なく文字数の多いものを優先する。
 let tocallRules = [];
 let tocallClasses = {};
+let miceRules = [], miceLegacy = [];
 fetch('tocalls.json').then(r => r.json()).then(j => {
   tocallClasses = j.classes || {};
+  miceRules = j.mice || [];
+  miceLegacy = j.micelegacy || [];
   tocallRules = j.tocalls.map(([pat, vendor, model, cls]) => ({
     re: new RegExp('^' + pat.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\?/g, '.').replace(/\*/g, '.*') + '$'),
     wild: (pat.match(/[?*]/g) || []).length, len: pat.length, vendor, model, cls,
   })).sort((x, y) => x.wild - y.wild || y.len - x.len);
 }).catch(() => {});
+function deviceText(vendor, model, cls) {
+  const c = tocallClasses[cls];
+  return [vendor, model].filter(Boolean).join(' ') + (c ? ` (${c})` : '');
+}
+// 宛先 (TOCALL) か Mic-E のコメント末尾コードで機種を判定する。
 function deviceName(raw) {
-  const m = /^[^>]+>([^,:]+)[^:]*:(.)/.exec(raw || '');
-  if (!m || m[2] === "'" || m[2] === '`') return ''; // Mic-E は宛先に位置が入っているので判定しない
+  const m = /^[^>]+>([^,:]+)[^:]*:([\s\S]*)$/.exec(raw || '');
+  if (!m) return '';
+  const info = m[2];
+  if (info[0] === "'" || info[0] === '`') { // Mic-E: 宛先は位置情報なので、コメント (info の10文字目以降) を見る
+    const c = info.slice(9);
+    const two = miceRules.find(r => c.length >= 2 && c.endsWith(r[0]));
+    if (two) return deviceText(two[1], two[2], two[3]);
+    const l = miceLegacy.filter(r => c[0] === r[0]);
+    const one = l.find(r => r[1] && c.length > 1 && c.endsWith(r[1])) || l.find(r => !r[1]);
+    return one ? deviceText(one[2], one[3], one[4]) : '';
+  }
   const dst = m[1].toUpperCase();
   const r = tocallRules.find(r => r.re.test(dst));
-  if (!r) return '';
-  const cls = tocallClasses[r.cls];
-  return [r.vendor, r.model].filter(Boolean).join(' ') + (cls ? ` (${cls})` : '');
+  return r ? deviceText(r.vendor, r.model, r.cls) : '';
 }
 
 function popupHTML(s) {
