@@ -25,7 +25,9 @@ type Config struct {
 	PHGRangeMap bool    `json:"phgRangeMap"` // 地図に通達範囲を表示
 
 	ISEnabled bool   `json:"isEnabled"`
-	ISServer  string `json:"isServer"`
+	ISServer  string `json:"isServer"`  // 主
+	ISServer2 string `json:"isServer2"` // 副 (主につながらないとき使う。空欄なら無し)
+	ISServer3 string `json:"isServer3"` // 予備 (副もだめなとき使う。空欄なら無し)
 	ISFilter  string `json:"isFilter"`
 
 	TNCType      string `json:"tncType"` // none, kiss-serial, kiss-tcp, kiss-bt

@@ -238,7 +238,10 @@
         <fieldset>
           <legend>APRS-IS</legend>
           <label class="chk"><input type="checkbox" name="isEnabled"> APRS-IS に接続する</label>
-          <label>サーバー <input name="isServer" placeholder="rotate.aprs2.net:14580"></label>
+          <label>サーバー (主) <input name="isServer" placeholder="rotate.aprs2.net:14580"></label>
+          <label>サーバー (副) <input name="isServer2" placeholder="空欄なら使わない"></label>
+          <label>サーバー (予備) <input name="isServer3" placeholder="空欄なら使わない"></label>
+          <p class="hint">主につながらないときは副、副もだめなときは予備に自動で切り替えます。接続が切れたときは、また主から順に試します。複数のサーバーに同時にはつなぎません。ホスト名 (rotate.aprs2.net など) の指定を推奨します。</p>
           <label>フィルター <input name="isFilter" placeholder="m/50"></label>
           <p class="hint">例: m/50 (自局から半径50km)、r/35.68/139.76/100、b/JA1XXX* など</p>
         </fieldset>

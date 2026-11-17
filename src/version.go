@@ -4,7 +4,7 @@ package main
 
 const (
 	softwareName    = "APRSIGate"
-	softwareVersion = "1.0.10"
+	softwareVersion = "1.0.11"
 	developedBy     = "Developed by JR2TTA Nao feat.Claude"
 )
 
@@ -15,6 +15,14 @@ type ChangeEntry struct {
 }
 
 var changelog = []ChangeEntry{
+	{
+		Version: "1.0.11",
+		Date:    "2026-11-17",
+		Changes: []string{
+			"APRS-IS のサーバーを主・副・予備の 3 つまで設定できるようにしました。主につながらないときは副、副もだめなときは予備に自動で切り替えます (同時に接続するのは常に 1 つです)。接続が切れたときは、また主から順に試します",
+			"RF から APRS-IS へ送るとき、同じ内容のパケットを 30 秒間送らない重複除去をやめました。APRS-IS のサーバー側で重複が除かれるため、RF で受けたパケットをそのまま送ります (aprsc の I-Gate 推奨事項に合わせました)",
+		},
+	},
 	{
 		Version: "1.0.10",
 		Date:    "2026-11-04",
