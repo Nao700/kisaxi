@@ -169,7 +169,7 @@ func (a *App) Start() {
 // connChanged は接続のやり直しが必要な設定が変わったか。
 func connChanged(o, n Config) bool {
 	return o.Callsign != n.Callsign || o.Passcode != n.Passcode ||
-		o.ISEnabled != n.ISEnabled || o.ISServer != n.ISServer || o.ISFilter != n.ISFilter ||
+		o.ISEnabled != n.ISEnabled || o.ISServer != n.ISServer || o.ISServer2 != n.ISServer2 || o.ISServer3 != n.ISServer3 || o.ISFilter != n.ISFilter ||
 		o.TNCType != n.TNCType || o.SerialPort != n.SerialPort || o.Baud != n.Baud ||
 		o.KissTCPAddr != n.KissTCPAddr || o.BTAddr != n.BTAddr || o.BTBridgeAddr != n.BTBridgeAddr || o.TNCInit != n.TNCInit || o.TxDelayMs != n.TxDelayMs ||
 		o.WXEnabled != n.WXEnabled || o.WXSource != n.WXSource || o.WXSerialPort != n.WXSerialPort ||
@@ -385,9 +385,6 @@ func (a *App) gateToIS(p *Packet, cfg Config) {
 	}
 	if i := strings.IndexAny(info, "\r\n"); i >= 0 {
 		info = info[:i]
-	}
-	if !a.dup.Check("is|" + hdr[:strings.IndexByte(hdr, '>')] + "|" + info) {
-		return
 	}
 	line := hdr + ",qAR," + cfg.Callsign + ":" + info
 	if is.Send(line) {
