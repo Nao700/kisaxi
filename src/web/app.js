@@ -143,6 +143,55 @@ function wxHTML(s) {
   return `<div class="wx"><div class="wx-head"><span>気象情報</span><span class="wx-time">${t}</span></div><div class="wx-grid">${cells}</div></div>`;
 }
 
+// ---------- PHG デコードと機種判定 ----------
+// PHG 数値の意味は APRS101 第 7 章。通達範囲 (km) の式は phgInfo と同じ。
+function decodePhg(comment) {
+  const m = /PHG(\d)(\d)(\d)(\d)/.exec(comment || '');
+  if (!m) return null;
+  const [p, h, g, d] = m.slice(1).map(Number);
+  const hft = 10 * 2 ** h;
+  const km = Math.sqrt(2 * hft * Math.sqrt((p * p) / 10 * (10 ** (g / 10)) / 2)) * 1.609344;
+  return { w: p * p, ft: hft, m: hft * 0.3048, g, dir: d * 45, km };
+}
+function phgText(r) {
+  return `${r.w} W / 高さ ${Math.round(r.m)} m (${r.ft} ft) / 利得 ${r.g} dBi / ${r.dir ? r.dir + '° 指向' : '無指向'} → 通達範囲 約 ${r.km.toFixed(1)} km`;
+}
+// 宛先 (TOCALL) から機種・ソフトを引く。表は tocalls.json (aprs-deviceid、scripts/update-tocalls.py で更新)。
+// パターンの ? は任意の1文字、* は任意の文字列。ワイルドカードが少なく文字数の多いものを優先する。
+let tocallRules = [];
+let tocallClasses = {};
+let miceRules = [], miceLegacy = [];
+fetch('tocalls.json').then(r => r.json()).then(j => {
+  tocallClasses = j.classes || {};
+  miceRules = j.mice || [];
+  miceLegacy = j.micelegacy || [];
+  tocallRules = j.tocalls.map(([pat, vendor, model, cls]) => ({
+    re: new RegExp('^' + pat.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\?/g, '.').replace(/\*/g, '.*') + '$'),
+    wild: (pat.match(/[?*]/g) || []).length, len: pat.length, vendor, model, cls,
+  })).sort((x, y) => x.wild - y.wild || y.len - x.len);
+}).catch(() => {});
+function deviceText(vendor, model, cls) {
+  const c = tocallClasses[cls];
+  return [vendor, model].filter(Boolean).join(' ') + (c ? ` (${c})` : '');
+}
+// 宛先 (TOCALL) か Mic-E のコメント末尾コードで機種を判定する。
+function deviceName(raw) {
+  const m = /^[^>]+>([^,:]+)[^:]*:([\s\S]*)$/.exec(raw || '');
+  if (!m) return '';
+  const info = m[2];
+  if (info[0] === "'" || info[0] === '`') { // Mic-E: 宛先は位置情報なので、コメント (info の10文字目以降) を見る
+    const c = info.slice(9);
+    const two = miceRules.find(r => c.length >= 2 && c.endsWith(r[0]));
+    if (two) return deviceText(two[1], two[2], two[3]);
+    const l = miceLegacy.filter(r => c[0] === r[0]);
+    const one = l.find(r => r[1] && c.length > 1 && c.endsWith(r[1])) || l.find(r => !r[1]);
+    return one ? deviceText(one[2], one[3], one[4]) : '';
+  }
+  const dst = m[1].toUpperCase();
+  const r = tocallRules.find(r => r.re.test(dst));
+  return r ? deviceText(r.vendor, r.model, r.cls) : '';
+}
+
 function popupHTML(s) {
   const rows = [];
   const add = (k, v) => { if (v !== '' && v != null) rows.push(`<tr><td>${k}</td><td>${v}</td></tr>`); };
@@ -156,6 +205,9 @@ function popupHTML(s) {
   if (s.hasAlt) add('高度', `${Math.round(s.alt)} m`);
   if (s.micE) add('Mic-E', esc(s.micE));
   add('コメント', esc(s.comment));
+  const phg = decodePhg(s.comment);
+  if (phg) add('PHG', esc(phgText(phg)));
+  add('機種/ソフト', esc(deviceName(s.raw)));
   add('ステータス', esc(s.status));
   add('経由', `<span class="via-${esc(s.via)}">${esc(s.via)}</span>` + (s.path ? ' ' + esc(s.path) : ''));
   add('最終受信', `${new Date(s.last).toLocaleString('ja-JP')} (${ago(s.last)}前) / ${s.count}回`);
