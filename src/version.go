@@ -4,7 +4,7 @@ package main
 
 const (
 	softwareName    = "APRSIGate"
-	softwareVersion = "1.0.10"
+	softwareVersion = "1.0.11"
 	developedBy     = "Developed by JR2TTA Nao feat.Claude"
 )
 
@@ -15,6 +15,14 @@ type ChangeEntry struct {
 }
 
 var changelog = []ChangeEntry{
+	{
+		Version: "1.0.11",
+		Date:    "2026-11-17",
+		Changes: []string{
+			"局の情報 (地図のポップアップ) に、PHG の内訳 (送信出力・アンテナ高・利得・指向性・通達範囲) を表示するようにしました",
+			"局の情報に、機種・ソフト名を表示するようにしました。宛先 (TOCALL) と、Mic-E 機器 (FTM-350 や TH-D74 など) のコメント末尾のコードから、aprs-deviceid の一覧で判定します。メーカー名は無線機器メーカーだけ表示します",
+		},
+	},
 	{
 		Version: "1.0.10",
 		Date:    "2026-11-04",
