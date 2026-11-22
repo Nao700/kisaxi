@@ -18,7 +18,7 @@ type savedData struct {
 }
 
 func (a *App) dataPath() string {
-	return filepath.Join(filepath.Dir(a.cfgPath), "aprsigate-data.json")
+	return legacyName(filepath.Dir(a.cfgPath), "kisaxi-data.json", "aprsigate-data.json")
 }
 
 func (a *App) retention() time.Duration {

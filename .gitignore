@@ -1,4 +1,5 @@
 # --- 個人設定（コールサイン・APRS-ISパスコード・位置情報） ---
+kisaxi.json
 aprsigate.json
 kisaxi.json
 *.local.json
@@ -20,4 +21,4 @@ Thumbs.db
 desktop.ini
 
 # go build を src/ で実行したときにできる実行ファイル
-/src/aprsigate
+/src/KISAXI

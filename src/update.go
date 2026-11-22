@@ -1,6 +1,6 @@
 package main
 
-// 更新の確認と入れ替え。公開リポジトリ kisaxi-release の最新リリースを GitHub API で取得し、
+// 更新の確認と入れ替え。公開リポジトリ kisaxi の最新リリースを GitHub API で取得し、
 // 今のバージョンより新しければ画面に知らせる。「今すぐ更新」または設定の自動更新で、
 // この環境用の実行ファイルをダウンロードして入れ替え、再起動する。
 
@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	updateRepo      = "Nao700/kisaxi-release"
+	updateRepo      = "Nao700/kisaxi"
 	updateInterval  = 24 * time.Hour   // 自動確認の間隔
 	updateFirstWait = 30 * time.Second // 起動 (または有効化) から最初の確認までの待ち
 )
@@ -100,7 +100,7 @@ func platformAsset() string {
 			}
 		}
 	}
-	name := "aprsigate-" + runtime.GOOS + "-" + arch
+	name := "KISAXI-" + runtime.GOOS + "-" + arch
 	if runtime.GOOS == "windows" {
 		name += ".exe"
 	}

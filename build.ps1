@@ -8,11 +8,11 @@ $dist = Join-Path $root 'dist'
 New-Item -ItemType Directory -Force $dist | Out-Null
 
 $targets = @(
-  @{ os = 'windows'; arch = 'amd64'; out = 'aprsigate-windows-x64.exe' },
-  @{ os = 'linux';   arch = 'amd64'; out = 'aprsigate-linux-x64' },
-  @{ os = 'linux';   arch = 'arm64'; out = 'aprsigate-linux-arm64' },
-  @{ os = 'linux';   arch = 'arm';   out = 'aprsigate-linux-armv7'; arm = '7' },
-  @{ os = 'linux';   arch = 'arm';   out = 'aprsigate-linux-armv6'; arm = '6' }
+  @{ os = 'windows'; arch = 'amd64'; out = 'KISAXI-windows-x64.exe' },
+  @{ os = 'linux';   arch = 'amd64'; out = 'KISAXI-linux-x64' },
+  @{ os = 'linux';   arch = 'arm64'; out = 'KISAXI-linux-arm64' },
+  @{ os = 'linux';   arch = 'arm';   out = 'KISAXI-linux-armv7'; arm = '7' },
+  @{ os = 'linux';   arch = 'arm';   out = 'KISAXI-linux-armv6'; arm = '6' }
 )
 
 Push-Location (Join-Path $root 'src')

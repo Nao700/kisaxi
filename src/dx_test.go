@@ -42,7 +42,7 @@ func TestDXRecordAndReset(t *testing.T) {
 	cfg := defaultConfig()
 	cfg.Lat, cfg.Lon = 35.0, 137.0
 	cfg.DXReset = "hour"
-	a := NewApp(cfg, filepath.Join(dir, "aprsigate.json"), filepath.Join(dir, "logs"))
+	a := NewApp(cfg, filepath.Join(dir, "kisaxi.json"), filepath.Join(dir, "logs"))
 	now := time.Date(2026, 10, 21, 8, 10, 0, 0, time.Local)
 	near, _ := ParseTNC2("JA1NEAR>APRS:=3510.00N/13700.00E>")
 	far, _ := ParseTNC2("JA1FAR>APRS:=3530.00N/13700.00E>")
@@ -62,7 +62,7 @@ func TestDXPersist(t *testing.T) {
 	dir := t.TempDir()
 	cfg := defaultConfig()
 	cfg.Lat, cfg.Lon = 35.0, 137.0
-	a := NewApp(cfg, filepath.Join(dir, "aprsigate.json"), filepath.Join(dir, "logs"))
+	a := NewApp(cfg, filepath.Join(dir, "kisaxi.json"), filepath.Join(dir, "logs"))
 	far, _ := ParseTNC2("JA1FAR>APRS:=3530.00N/13700.00E>")
 	a.checkDX(far, cfg, time.Now())
 	a.SaveData()

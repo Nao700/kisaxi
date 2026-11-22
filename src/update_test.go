@@ -40,8 +40,8 @@ func TestFetchUpdate(t *testing.T) {
 		switch r.URL.Path {
 		case "/new":
 			w.Write([]byte(`{"tag_name":"v1.0.6","html_url":"https://example.com/rel",
-				"assets":[{"name":"aprsigate-linux-x64","browser_download_url":"https://example.com/x64"},
-				{"name":"aprsigate-windows-x64.exe","browser_download_url":"https://example.com/exe"}]}`))
+				"assets":[{"name":"KISAXI-linux-x64","browser_download_url":"https://example.com/x64"},
+				{"name":"KISAXI-windows-x64.exe","browser_download_url":"https://example.com/exe"}]}`))
 		case "/same":
 			w.Write([]byte(`{"tag_name":"1.0.5","html_url":"https://example.com/rel","assets":[]}`))
 		case "/broken":
@@ -55,11 +55,11 @@ func TestFetchUpdate(t *testing.T) {
 	defer srv.Close()
 	ctx := context.Background()
 
-	u := fetchUpdate(ctx, srv.URL+"/new", "1.0.5", "aprsigate-windows-x64.exe")
+	u := fetchUpdate(ctx, srv.URL+"/new", "1.0.5", "KISAXI-windows-x64.exe")
 	if !u.Newer || u.Latest != "1.0.6" || u.URL != "https://example.com/rel" || u.Asset != "https://example.com/exe" || u.Error != "" {
 		t.Errorf("new: %+v", u)
 	}
-	u = fetchUpdate(ctx, srv.URL+"/same", "1.0.5", "aprsigate-linux-x64")
+	u = fetchUpdate(ctx, srv.URL+"/same", "1.0.5", "KISAXI-linux-x64")
 	if u.Newer || u.Latest != "1.0.5" || u.Asset != "" || u.Error != "" {
 		t.Errorf("same: %+v", u)
 	}
@@ -81,7 +81,7 @@ func TestUpdateCheckOffByDefault(t *testing.T) {
 }
 
 func TestPlatformAsset(t *testing.T) {
-	if a := platformAsset(); a == "" || a[:10] != "aprsigate-" {
+	if a := platformAsset(); a == "" || a[:7] != "KISAXI-" {
 		t.Errorf("platformAsset() = %q", a)
 	}
 }

@@ -53,7 +53,7 @@ async function api(path, body) {
   try {
     r = await fetch(path, opt);
   } catch {
-    throw new Error('アプリ本体 (aprsigate) に接続できません。アプリが起動しているか確認してください');
+    throw new Error('アプリ本体 (KISAXI) に接続できません。アプリが起動しているか確認してください');
   }
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(j.error || r.statusText);

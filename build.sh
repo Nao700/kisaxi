@@ -4,5 +4,5 @@ set -e
 cd "$(dirname "$0")/src"
 go test ./...
 mkdir -p ../dist
-CGO_ENABLED=0 go build -trimpath -ldflags '-s -w' -o ../dist/aprsigate .
-echo "built: dist/aprsigate"
+CGO_ENABLED=0 go build -trimpath -ldflags '-s -w' -o ../dist/KISAXI .
+echo "built: dist/KISAXI"
