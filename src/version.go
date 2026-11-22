@@ -3,8 +3,8 @@ package main
 // バージョン情報と変更履歴。新しい版を出すときは softwareVersion を上げ、changelog の先頭に追記する。
 
 const (
-	softwareName    = "APRSIGate"
-	softwareVersion = "1.0.11"
+	softwareName    = "KISAXI"
+	softwareVersion = "1.0.12"
 	developedBy     = "Developed by JR2TTA Nao feat.Claude"
 )
 
@@ -15,6 +15,14 @@ type ChangeEntry struct {
 }
 
 var changelog = []ChangeEntry{
+	{
+		Version: "1.0.12",
+		Date:    "2026-11-22",
+		Changes: []string{
+			"ソフトの名称を KISAXI にしました。実行ファイルの名前は KISAXI-windows-x64.exe、KISAXI-linux-x64 などになります。設定ファイルは kisaxi.json、受信履歴は kisaxi-data.json に変わります (試用版の aprsigate.json などが同じフォルダにあれば、そのまま引き継いで使います)",
+			"更新の確認先を Nao700/kisaxi の GitHub リリースに変更しました",
+		},
+	},
 	{
 		Version: "1.0.11",
 		Date:    "2026-11-17",

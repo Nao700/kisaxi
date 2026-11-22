@@ -1,6 +1,6 @@
 #!/bin/bash
 # KISAXI の起動アイコンをデスクトップとアプリケーションメニューに作る (Linux / Raspberry Pi)
-# 実行ファイル (aprsigate-linux-*) と aprsigate-start.sh と同じフォルダに置いて、
+# 実行ファイル (KISAXI-linux-*) と kisaxi-start.sh と同じフォルダに置いて、
 # 一度だけ `bash desktop-setup.sh` を実行する。sudo は不要。
 # 消すときは `bash desktop-setup.sh --remove`
 set -e
@@ -16,11 +16,11 @@ if [ "$1" = "--remove" ]; then
 	exit 0
 fi
 
-if [ ! -f "$dir/aprsigate-start.sh" ]; then
-	echo "$dir に aprsigate-start.sh がありません。同じフォルダに置いてから実行してください。" >&2
+if [ ! -f "$dir/kisaxi-start.sh" ]; then
+	echo "$dir に kisaxi-start.sh がありません。同じフォルダに置いてから実行してください。" >&2
 	exit 1
 fi
-chmod +x "$dir/aprsigate-start.sh"
+chmod +x "$dir/kisaxi-start.sh"
 
 icon=utilities-terminal
 for f in "$dir/kisaxi_app_icon.png" "$dir/../assets/kisaxi_app_icon.png"; do
@@ -36,8 +36,8 @@ for out in "$desktop/$name" "$apps/$name"; do
 [Desktop Entry]
 Type=Application
 Name=KISAXI
-Comment=APRS I-Gate を起動して管理画面を開く
-Exec="$dir/aprsigate-start.sh"
+Comment=KISAXI を起動して管理画面を開く
+Exec="$dir/kisaxi-start.sh"
 Path=$dir
 Icon=$icon
 Terminal=true

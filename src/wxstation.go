@@ -433,7 +433,7 @@ type savedWX struct {
 }
 
 func (a *App) wxPath() string {
-	return filepath.Join(filepath.Dir(a.cfgPath), "aprsigate-wx.json")
+	return legacyName(filepath.Dir(a.cfgPath), "kisaxi-wx.json", "aprsigate-wx.json")
 }
 
 // saveWX は気象の履歴をファイルに保存する (集計中の区間も含める)。

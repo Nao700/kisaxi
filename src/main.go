@@ -37,7 +37,7 @@ func openBrowser(u string) {
 }
 
 func main() {
-	cfgFlag := flag.String("config", "", "設定ファイルのパス (既定: 実行ファイルと同じフォルダの aprsigate.json)")
+	cfgFlag := flag.String("config", "", "設定ファイルのパス (既定: 実行ファイルと同じフォルダの kisaxi.json)")
 	listen := flag.String("listen", "", "Web UI の待ち受けアドレス (例: 0.0.0.0:8073)")
 	noBrowser := flag.Bool("nobrowser", false, "起動時にブラウザを開かない")
 	afterUpdate := flag.Bool("after-update", false, "更新後の再起動 (内部用: 古いプロセスが終わるまで待ち受けを再試行する)")

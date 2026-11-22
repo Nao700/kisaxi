@@ -51,7 +51,7 @@ func TestWeatherMissingValues(t *testing.T) {
 func TestPersistRoundTrip(t *testing.T) {
 	dir := t.TempDir()
 	cfg := defaultConfig()
-	a := NewApp(cfg, filepath.Join(dir, "aprsigate.json"), filepath.Join(dir, "logs"))
+	a := NewApp(cfg, filepath.Join(dir, "kisaxi.json"), filepath.Join(dir, "logs"))
 	p, _ := ParseTNC2("JA2WX>APRS:=3510.00N/13655.00E_180/003t075h52b10130")
 	a.db.Update(p, "RF", time.Now(), 10)
 	old, _ := ParseTNC2("JA9OLD>APRS:=3510.00N/13655.00E-old")

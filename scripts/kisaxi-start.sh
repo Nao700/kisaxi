@@ -1,6 +1,6 @@
 #!/bin/bash
 # KISAXI をダブルクリックやメニューから起動するためのスクリプト (Linux / Raspberry Pi)
-# 実行ファイル (aprsigate-linux-*) と同じフォルダに置いて使う。
+# 実行ファイル (KISAXI-linux-*) と同じフォルダに置いて使う。
 # すでに動いている (systemd で常駐中など) ときは、起動せずに管理画面だけを開く。
 cd "$(dirname "$(readlink -f "$0")")" || exit 1
 
@@ -23,15 +23,15 @@ if running; then
 fi
 
 case "$(uname -m)" in
-aarch64 | arm64) want=aprsigate-linux-arm64 ;;
-armv7l) want=aprsigate-linux-armv7 ;;
-armv6l) want=aprsigate-linux-armv6 ;;
-x86_64) want=aprsigate-linux-x64 ;;
+aarch64 | arm64) want=KISAXI-linux-arm64 ;;
+armv7l) want=KISAXI-linux-armv7 ;;
+armv6l) want=KISAXI-linux-armv6 ;;
+x86_64) want=KISAXI-linux-x64 ;;
 *) want= ;;
 esac
 
 bin=
-for f in "$want" aprsigate-linux-* aprsigate; do
+for f in "$want" KISAXI-linux-* KISAXI; do
 	if [ -n "$f" ] && [ -f "$f" ] && [ "${f%.old}" = "$f" ]; then
 		bin=$f
 		break

@@ -82,7 +82,7 @@ cat >"$unit" <<EOF
 Description=rfcomm$n for $name
 After=bluetooth.service
 Wants=bluetooth.service
-Before=aprsigate.service
+Before=kisaxi.service
 
 [Service]
 Type=oneshot

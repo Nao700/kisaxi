@@ -104,7 +104,7 @@ func defaultConfig() Config {
 		Lon:              139.7671,
 		SymbolTable:      "I",
 		Symbol:           "&",
-		Comment:          "APRS I-Gate",
+		Comment:          "KISAXI",
 		PHGEnabled:       false,
 		PHGPower:         10,
 		PHGHeight:        10,
@@ -297,6 +297,24 @@ func (c *Config) Validate() error {
 	return validateObjects(c)
 }
 
+// legacyName は旧名称 (aprsigate) のファイルが既にあればそちらを、無ければ新名称のファイルを返す。
+// 試用版からの移行で、設定や受信履歴が引き継がれるようにする。
+func legacyName(dir, newName, oldName string) string {
+	n := filepath.Join(dir, newName)
+	if _, err := os.Stat(n); err == nil {
+		return n
+	}
+	if o := filepath.Join(dir, oldName); fileExists(o) {
+		return o
+	}
+	return n
+}
+
+func fileExists(p string) bool {
+	_, err := os.Stat(p)
+	return err == nil
+}
+
 // configPath は設定ファイルの既定パスを返す。実行ファイルと同じフォルダに書き込めればそこを使う (ポータブル運用)。
 func configPath() string {
 	if exe, err := os.Executable(); err == nil {
@@ -305,15 +323,19 @@ func configPath() string {
 		if f, err := os.Create(test); err == nil {
 			f.Close()
 			os.Remove(test)
-			return filepath.Join(dir, "aprsigate.json")
+			return legacyName(dir, "kisaxi.json", "aprsigate.json")
 		}
 	}
 	if dir, err := os.UserConfigDir(); err == nil {
-		dir = filepath.Join(dir, "aprsigate")
+		old := filepath.Join(dir, "aprsigate")
+		dir = filepath.Join(dir, "kisaxi")
+		if fileExists(filepath.Join(old, "aprsigate.json")) && !fileExists(filepath.Join(dir, "kisaxi.json")) {
+			return filepath.Join(old, "aprsigate.json")
+		}
 		os.MkdirAll(dir, 0o755)
-		return filepath.Join(dir, "aprsigate.json")
+		return filepath.Join(dir, "kisaxi.json")
 	}
-	return "aprsigate.json"
+	return "kisaxi.json"
 }
 
 func loadConfig(path string) (Config, error) {

@@ -57,7 +57,8 @@ header.top nav a:hover { color: var(--accent); }
 .hero { padding: 56px 0 40px; text-align: center; }
 .hero img { width: 120px; height: 120px; }
 .hero h1 { font-size: 2.2rem; margin: 12px 0 4px; }
-.hero .lead { font-size: 1.1rem; color: var(--muted); margin: 0 0 24px; }
+.hero .lead { font-size: 1.1rem; color: var(--muted); margin: 0 0 8px; }
+.hero .ver { font-size: .9rem; color: var(--muted); margin: 0 0 24px; }
 .btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 .btn {
   display: inline-block; padding: 10px 22px; border-radius: 8px;
@@ -65,6 +66,17 @@ header.top nav a:hover { color: var(--accent); }
 }
 .btn.primary { background: var(--accent); color: #fff; }
 .btn.ghost { color: var(--accent); }
+.release { margin: 0 auto 24px; padding: 14px 20px; max-width: 420px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-soft); }
+.release-title { font-size: .95rem; color: var(--muted); }
+.release-title strong { color: var(--text); font-size: 1.05rem; }
+.count { display: flex; justify-content: center; gap: 16px; margin-top: 6px; }
+.count div { min-width: 56px; }
+.count b { display: block; font-size: 1.8rem; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.count span { font-size: .8rem; color: var(--muted); }
+.count[hidden], .release-done[hidden] { display: none; }
+.release-done { font-weight: 700; font-size: 1.1rem; margin-top: 4px; }
+.muted { color: var(--muted); font-size: .9rem; }
+.btn.disabled { color: var(--muted); border-color: var(--line); background: var(--bg-soft); cursor: default; }
 .tags { margin-top: 20px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 .tag { font-size: .8rem; padding: 2px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
 
@@ -95,6 +107,12 @@ pre { background: var(--bg-soft); border: 1px solid var(--line); border-radius: 
 .note { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 8px; padding: 12px 16px; }
 .note ul { margin: 0; padding-left: 1.2em; }
 
+.history dt { font-weight: 700; margin-top: 16px; }
+.history dt:first-child { margin-top: 0; }
+.history dt span { font-weight: 400; color: var(--muted); font-size: .85rem; margin-left: 8px; }
+.history dd { margin: 4px 0 0; }
+.history ul { margin: 0; padding-left: 1.2em; }
+
 footer { border-top: 1px solid var(--line); padding: 24px 0 40px; color: var(--muted); font-size: .85rem; text-align: center; }
 </style>
 </head>
@@ -109,7 +127,10 @@ footer { border-top: 1px solid var(--line); padding: 24px 0 40px; color: var(--m
       <a href="#screens">画面</a>
       <a href="#env">対応環境</a>
       <a href="#start">はじめ方</a>
+      <a href="#extras">付録</a>
+      <a href="#history">更新履歴</a>
       <a href="#notes">注意事項</a>
+      <a href="#support">応援</a>
     </nav>
   </div>
 </header>
@@ -119,10 +140,18 @@ footer { border-top: 1px solid var(--line); padding: 24px 0 40px; color: var(--m
     <img src="images/icon.png" alt="KISAXI アイコン">
     <h1>KISAXI</h1>
     <p class="lead">インストール不要で、すぐに I-Gate を立ち上げられる<br>APRS I-Gate ソフトウェア</p>
-    <div class="btns">
-      <a class="btn primary" href="https://github.com/Nao700/kisaxi/releases">ダウンロード</a>
-      <a class="btn ghost" href="https://github.com/Nao700/kisaxi">GitHub で見る</a>
+    <p class="ver">最新バージョン 1.0.12（2026-11-22）</p>
+    <div class="release" id="release" data-date="2026-11-23T00:00:00+09:00">
+      <div class="release-title">正式リリース <strong>2026年11月23日</strong></div>
+      <div class="count" id="count" aria-live="off">
+        <div><b id="cd-d">--</b><span>日</span></div>
+        <div><b id="cd-h">--</b><span>時間</span></div>
+        <div><b id="cd-m">--</b><span>分</span></div>
+        <div><b id="cd-s">--</b><span>秒</span></div>
+      </div>
+      <div class="release-done" id="release-done" hidden>正式リリースしました</div>
     </div>
+    <p><a class="btn primary" href="https://github.com/Nao700/kisaxi/releases/latest">ダウンロード（GitHub Releases）</a></p>
     <div class="tags">
       <span class="tag">Windows 10 / 11</span>
       <span class="tag">Linux x64</span>
@@ -150,7 +179,7 @@ footer { border-top: 1px solid var(--line); padding: 24px 0 40px; color: var(--m
         </div>
         <div class="card">
           <h3>地図表示</h3>
-          <p>OpenStreetMap 上に APRS シンボル、コールサイン、移動局の軌跡を表示します。局をクリックすると距離・方位・速度・高度・コメント・生パケットが見られます。</p>
+          <p>OpenStreetMap 上に APRS シンボル、コールサイン、移動局の軌跡（日付や時間で区切るかどうかは設定で選べます）を表示します。局をクリックすると距離・方位・速度・高度・コメント・生パケットが見られます。重なったアイコンはクリックで広げて 1 局ずつ選べます。</p>
         </div>
         <div class="card">
           <h3>ビーコン・オブジェクト</h3>
@@ -171,6 +200,30 @@ footer { border-top: 1px solid var(--line); padding: 24px 0 40px; color: var(--m
         <div class="card">
           <h3>ログと復元</h3>
           <p>パケットは日別のログに保存されます。受信した局は終了時に保存され、次回起動時に復元されます。</p>
+        </div>
+        <div class="card">
+          <h3>ウェザーステーション</h3>
+          <p>Davis（Vantage Pro2 / Vue）の現在値を読み取り、自局とは別の SSID（既定は自局コール-13）の位置付き APRS WX として APRS-IS と RF に送信します。「気象」タブに現在値、本日の最高・最低、グラフ（6時間〜7日）を表示します。Davis の屋外センサーの電波を RTL-SDR で直接受信することもできます（β版）。433MHz 帯の簡易気象センサーは rtl_433 経由で取り込めます（β版）。</p>
+        </div>
+        <div class="card">
+          <h3>自動更新</h3>
+          <p>新しいバージョンが出ると画面上部にお知らせが出て、ボタン一つでダウンロードと入れ替え、再起動までできます。ダウンロードしたファイルはチェックサムなどを確かめてから入れ替えます。設定で、見つかったら自動で更新することもできます（既定はオフ）。</p>
+        </div>
+        <div class="card">
+          <h3>最長距離 (DX) の記録</h3>
+          <p>RF で直接受信した最も遠い局を記録して画面上部に表示します。更新するとステータスで送信し、aprs.fi のステータス欄に表示されます。リセットのタイミング（毎日・毎時）と距離の単位（km / mi）は設定で選べます。</p>
+        </div>
+        <div class="card">
+          <h3>出力・アンテナ (PHG) と通達範囲</h3>
+          <p>送信出力・アンテナ高・利得・指向を設定すると、ビーコンに PHG を付けて送信します。計算した通達範囲を、地図に自局を中心とした円で表示します。</p>
+        </div>
+        <div class="card">
+          <h3>位置あいまい局の表示</h3>
+          <p>座標の桁を伏せて送っている局（Mic-E を含む）は、マーカーにカーソルを乗せるとその範囲をピンクの四角で地図に表示し、マーカーを範囲の中心に合わせます。</p>
+        </div>
+        <div class="card">
+          <h3>aprs.fi で機種名を表示</h3>
+          <p>正式に登録された宛先 (TOCALL) <code>APKSXI</code> で送信するので、aprs.fi などで KISAXI からの送信だとわかります。</p>
         </div>
       </div>
     </div>
@@ -210,12 +263,14 @@ footer { border-top: 1px solid var(--line); padding: 24px 0 40px; color: var(--m
       <div class="table-scroll">
         <table>
           <tr><th>OS</th><th>ファイル</th></tr>
-          <tr><td>Windows 10 / 11（64bit）</td><td><code>aprsigate-windows-x64.exe</code></td></tr>
-          <tr><td>Linux（x64）</td><td><code>aprsigate-linux-x64</code></td></tr>
-          <tr><td>Raspberry Pi（64bit OS）</td><td><code>aprsigate-linux-arm64</code></td></tr>
-          <tr><td>Raspberry Pi（32bit OS）</td><td><code>aprsigate-linux-armv7</code></td></tr>
+          <tr><td>Windows 10 / 11（64bit）</td><td><code>KISAXI-windows-x64.exe</code></td></tr>
+          <tr><td>Linux（x64）</td><td><code>KISAXI-linux-x64</code></td></tr>
+          <tr><td>Raspberry Pi 3 / 4 / 5、Zero 2 W（64bit OS）</td><td><code>KISAXI-linux-arm64</code></td></tr>
+          <tr><td>Raspberry Pi 3 / 4、Zero 2 W（32bit OS）</td><td><code>KISAXI-linux-armv7</code></td></tr>
+          <tr><td>Raspberry Pi Zero / Zero W（非推奨）</td><td><code>KISAXI-linux-armv6</code></td></tr>
         </table>
       </div>
+      <p>Raspberry Pi で <code>uname -m</code> が <code>aarch64</code> なら 64bit OS です。Pi Zero / Zero W は CPU が非力で動作が不安定になる可能性があるため、おすすめしません。</p>
       <p>どれもランタイムのインストールは不要な単体実行ファイルです。Windows で互換モードを使う必要もありません。</p>
     </div>
   </section>
@@ -226,20 +281,32 @@ footer { border-top: 1px solid var(--line); padding: 24px 0 40px; color: var(--m
 
       <h3>Windows</h3>
       <ol class="steps">
-        <li><code>aprsigate-windows-x64.exe</code> を好きなフォルダに置いて実行します。</li>
+        <li><code>KISAXI-windows-x64.exe</code> を好きなフォルダに置いて実行します。</li>
         <li>ブラウザで管理画面（<code>http://127.0.0.1:8073/</code>）が自動で開きます。</li>
         <li>「設定」タブでコールサイン・パスコード・位置・TNC を入力し、「保存して適用」を押します。</li>
       </ol>
       <p>署名していない exe のため、初回起動時に SmartScreen の警告が出たら「詳細情報」から「実行」を選んでください。コンソールウィンドウを閉じると終了します。</p>
 
       <h3>Linux / Raspberry Pi</h3>
-<pre>chmod +x aprsigate-linux-arm64
-./aprsigate-linux-arm64</pre>
+<pre>chmod +x KISAXI-linux-arm64
+./KISAXI-linux-arm64</pre>
       <ul>
         <li>シリアル TNC を使う場合は、実行ユーザーを <code>dialout</code> グループに追加します：<code>sudo usermod -aG dialout $USER</code></li>
-        <li>別の PC から管理画面を開くときは <code>-listen 0.0.0.0:8073</code> を付けて起動します。</li>
-        <li>systemd で常駐させる例は <a href="https://github.com/Nao700/kisaxi#linux">README</a> にあります。</li>
+        <li>別の PC やスマホから管理画面を開くときは、Tailscale の利用をおすすめします。Pi で <code>sudo tailscale serve --bg 8073</code> を実行すれば、Tailscale を入れた端末だけから、家の中でも外出先でも安全に開けます。Tailscale を使えないときは <code>-listen 0.0.0.0:8073</code> を付けて起動しますが、認証機能がないので信頼できる LAN 内だけで使ってください。</li>
       </ul>
+      <p>systemd で常駐させる例（<code>/etc/systemd/system/kisaxi.service</code>）。「ユーザー名」は実行するユーザーに置き換えてください。いまの Raspberry Pi OS には <code>pi</code> ユーザーがありません。</p>
+<pre>[Unit]
+Description=APRS I-Gate
+After=network-online.target
+
+[Service]
+User=ユーザー名
+WorkingDirectory=/home/ユーザー名/kisaxi
+ExecStart=/home/ユーザー名/kisaxi/KISAXI-linux-arm64 -nobrowser
+Restart=always
+
+[Install]
+WantedBy=multi-user.target</pre>
 
       <h3>設定のポイント</h3>
       <div class="table-scroll">
@@ -255,6 +322,128 @@ footer { border-top: 1px solid var(--line); padding: 24px 0 40px; color: var(--m
     </div>
   </section>
 
+  <section id="extras">
+    <div class="wrap">
+      <h2>付録</h2>
+
+      <h3>Raspberry Pi のデスクトップから起動する</h3>
+      <p>毎回ターミナルでコマンドを打たずに、デスクトップやメニューのアイコンをダブルクリックして起動できるようにするスクリプトです。</p>
+      <div class="btns" style="justify-content:flex-start">
+        <a class="btn primary" href="extras/kisaxi-pi-launcher.zip" download>kisaxi-pi-launcher.zip をダウンロード</a>
+      </div>
+      <ol class="steps">
+        <li>zip の中の <code>kisaxi-start.sh</code>・<code>desktop-setup.sh</code>・<code>kisaxi_app_icon.png</code> を、実行ファイルと同じフォルダ（例：<code>~/kisaxi</code>）に置きます。</li>
+        <li>ターミナルで一度だけ次を実行します（sudo は不要です）。
+<pre>bash ~/kisaxi/desktop-setup.sh</pre></li>
+        <li>デスクトップとメニューの「インターネット」に KISAXI のアイコンができます。ダブルクリックすると、ターミナルの画面つきで起動して管理画面が開きます。</li>
+      </ol>
+      <ul>
+        <li>「このファイルを実行しますか」と聞かれたら「実行」を選びます。</li>
+        <li>止めるときは、開いたターミナルの画面で <code>Ctrl+C</code> を押すか、画面を閉じます。</li>
+        <li>機種に合う実行ファイル（arm64 / armv7 / armv6 / x64）は自動で選ばれます。</li>
+        <li>systemd で常駐させている間にアイコンを押すと、二重には起動せず管理画面だけが開きます。</li>
+        <li>アイコンを消すときは <code>bash ~/kisaxi/desktop-setup.sh --remove</code> を実行します。</li>
+      </ul>
+      <p>ファイルを個別に見る：<a href="extras/pi-launcher/kisaxi-start.sh">kisaxi-start.sh</a> ・ <a href="extras/pi-launcher/desktop-setup.sh">desktop-setup.sh</a> ・ <a href="extras/pi-launcher/kisaxi_app_icon.png">kisaxi_app_icon.png</a></p>
+
+      <h3>Bluetooth で無線機とつなぐ（Linux / Raspberry Pi）</h3>
+      <p>TH-D74 / TH-D75 / TM-D750 を Bluetooth で TNC として使えるように、<code>/dev/rfcomm0</code> を作るスクリプトです。再起動後も自動で使えるように登録します。実機での動作確認は TM-D750 で行っています。</p>
+      <div class="btns" style="justify-content:flex-start">
+        <a class="btn primary" href="extras/bluetooth/bt-tnc-setup.sh" download>bt-tnc-setup.sh をダウンロード</a>
+      </div>
+      <ol class="steps">
+        <li>無線機の Bluetooth をオンにして、Pi とペアリングします（デスクトップ右上の Bluetooth アイコン、または <code>bluetoothctl</code> で）。</li>
+        <li>ダウンロードしたファイルを実行ファイルと同じフォルダ（例：<code>~/kisaxi</code>）に置き、ターミナルで次を実行します。
+<pre>sudo bash ~/kisaxi/bt-tnc-setup.sh</pre></li>
+        <li>KISAXI の「設定」で TNC を「KISS シリアル」、ポートを <code>/dev/rfcomm0</code> にして「保存して適用」を押します。</li>
+      </ol>
+      <ul>
+        <li>無線機側は KISS モードにして、データの通信先を Bluetooth にします。</li>
+        <li>シリアルポートのチャンネルを自動で調べられないときは番号を聞かれます。TM-D750 は 27 でした。</li>
+        <li>やめるときは <code>sudo bash ~/kisaxi/bt-tnc-setup.sh --remove</code> を実行します。</li>
+        <li>Windows ではスクリプトは不要です。ペアリング後に「その他の Bluetooth 設定」→「COM ポート」に出る「発信」側の COM を選びます。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="history">
+    <div class="wrap">
+      <h2>更新履歴</h2>
+      <dl class="history">
+        <dt>1.0.12 <span>2026-11-22</span></dt>
+        <dd><ul>
+          <li>ソフトの名称を KISAXI に変更。実行ファイル名は <code>KISAXI-windows-x64.exe</code>・<code>KISAXI-linux-x64</code> など。設定ファイルは <code>kisaxi.json</code>、受信履歴は <code>kisaxi-data.json</code> になる（試用版のファイルが同じフォルダにあればそのまま引き継ぐ）</li>
+          <li>更新の確認先を GitHub の Nao700/kisaxi リリースに変更</li>
+        </ul></dd>
+        <dt>1.0.11 <span>2026-11-17</span></dt>
+        <dd><ul>
+          <li>APRS-IS のサーバーを主・副・予備の 3 つまで設定可能に。主につながらないときは副、予備へ自動で切り替える</li>
+          <li>RF から APRS-IS へ送るときの 30 秒の重複除去をやめた（重複は APRS-IS のサーバー側で除かれるため）</li>
+          <li>局の情報に、PHG の内訳（送信出力・アンテナ高・利得・指向性・通達範囲）と、機種・ソフト名を表示</li>
+        </ul></dd>
+        <dt>1.0.10 <span>2026-11-04</span></dt>
+        <dd><ul>
+          <li>地図上で重なっているアイコンをクリックすると、放射状に広がって 1 局ずつ選べるように変更。広がった後にアイコンをクリックすると、その局の情報が開く。地図の空白をクリック・拡大縮小・Esc キーで元に戻る</li>
+        </ul></dd>
+        <dt>1.0.9 <span>2026-11-02</span></dt>
+        <dd><ul>
+          <li>Davis の屋外センサー (ISS) の電波を、RTL-SDR で直接受信できるように（β版）。928.15〜929.65 MHz の 16 チャンネルを同時に受信し、気温・湿度・風向・風速・雨量・日射を気象タブと APRS WX 送信に反映</li>
+          <li>RTL-SDR のドライバ (rtlsdr.dll / librtlsdr) は KISAXI と同じフォルダに置く。気圧は電波に含まれないため送信されず、雨量は起動後の増分を積算</li>
+          <li>メモ：Android 版を作成中（試作）。Android 端末で KISAXI を動かし、Bluetooth の無線機をつないで使えるようにする予定。配布時期は未定</li>
+        </ul></dd>
+        <dt>1.0.8 <span>2026-11-01</span></dt>
+        <dd><ul>
+          <li>ウェザーステーション (Davis) に対応。USB・シリアルのデータロガーまたは WeatherLinkIP から、約 2 秒ごとに現在値を読み取る</li>
+          <li>気象データを別の SSID の位置付き APRS WX パケットとして送信。APRS-IS（既定 5 分間隔）と RF（既定 30 分間隔、オフ可）を別々に設定でき、地図にも気象局として表示</li>
+          <li>rtl_433 (RTL-SDR) からの気象データ取り込みを追加（β版）。433MHz 帯の簡易気象センサー (Fine Offset・Acurite・Bresser など) に対応</li>
+          <li>「気象」タブを追加。現在値、本日の最高・最低気温と最大瞬間風速、グラフ (6 時間 / 24 時間 / 72 時間 / 7 日)、送信状況を表示し、手動送信もできる</li>
+        </ul></dd>
+        <dt>1.0.7 <span>2026-10-29</span></dt>
+        <dd><ul>
+          <li>地図の軌跡を日付が変わったところで区切って描くように変更。受信範囲の外に出て別の日に戻ってきた局が、離れた点どうしの直線で結ばれて扇形になる問題を修正</li>
+          <li>設定の「その他」に「軌跡の区切り」を追加。日付が変わったら（既定）／一定時間あいたら（間隔を分で指定）／区切らない から選べる</li>
+        </ul></dd>
+        <dt>1.0.6 <span>2026-10-22</span></dt>
+        <dd><ul>
+          <li>自動更新を追加。画面上部のお知らせまたは「このソフトについて」から、ダウンロード・入れ替え・再起動まで行える</li>
+          <li>設定に「新しいバージョンが見つかったら自動でダウンロードして入れ替え、再起動する」を追加（既定オフ）</li>
+          <li>ダウンロードしたファイルはチェックサムと実行ファイルの形式を確かめてから入れ替える。systemd で動かしている場合は終了だけ行い、再起動はサービス側に任せる</li>
+        </ul></dd>
+        <dt>1.0.5 <span>2026-10-21</span></dt>
+        <dd><ul>
+          <li>更新の確認（試験的、既定オフ）を追加</li>
+          <li>局の位置表示を aprs.fi と同じ度分表記に変更</li>
+          <li>最長距離 (DX) の記録と表示を追加。更新したらステータスで送信（最短 10 分間隔）</li>
+          <li>DX のリセット（毎日 24 時 / 毎時 0 分）・距離の単位（km / mi）・RF への送信を設定で選択可能</li>
+          <li>出力・アンテナ (PHG) の設定を追加。ビーコンに PHG を付けて送信し、通達範囲を地図に表示</li>
+        </ul></dd>
+        <dt>1.0.4 <span>2026-10-20</span></dt>
+        <dd><ul>
+          <li>位置あいまい局（Mic-E を含む）の範囲を地図に表示し、マーカーを範囲の中心に補正</li>
+          <li>宛先 (TOCALL) を登録済みの <code>APKSXI</code> に変更</li>
+          <li>Raspberry Pi Zero / Zero W 向けの armv6 版を追加</li>
+        </ul></dd>
+        <dt>1.0.3 <span>2026-10-14</span></dt>
+        <dd><ul>
+          <li>デジピータ機能を追加</li>
+          <li>パケットモニターに中継 (DIGI) の表示と絞り込みを追加</li>
+        </ul></dd>
+        <dt>1.0.2 <span>2026-10-11</span></dt>
+        <dd><ul>
+          <li>オブジェクト / アイテムビーコンを追加（最大 10 件）</li>
+          <li>送信するパケットの直接編集、削除通知の送信に対応</li>
+        </ul></dd>
+        <dt>1.0.1 <span>2026-10-11</span></dt>
+        <dd><ul>
+          <li>受信した局とパケットを再起動後も引き継ぐように変更</li>
+          <li>気象局 (WX) 情報欄を追加</li>
+        </ul></dd>
+        <dt>1.0.0 <span>2026-10-11</span></dt>
+        <dd><ul><li>初版リリース</li></ul></dd>
+      </dl>
+    </div>
+  </section>
+
   <section id="notes">
     <div class="wrap">
       <h2>注意事項</h2>
@@ -267,6 +456,14 @@ footer { border-top: 1px solid var(--line); padding: 24px 0 40px; color: var(--m
       </div>
     </div>
   </section>
+  <section id="support">
+    <div class="wrap">
+      <h2>開発を応援する</h2>
+      <p>KISAXI は無料で使えます。開発を応援していただける方は、ドネーションをご検討ください。</p>
+      <p><a class="btn primary" href="https://github.com/sponsors/Nao700" target="_blank" rel="noopener">GitHub Sponsors で応援する</a></p>
+      <p class="muted">GitHub のアカウントで、一度きりの支援も毎月の支援も選べます。</p>
+    </div>
+  </section>
 </main>
 
 <footer>
@@ -275,5 +472,27 @@ footer { border-top: 1px solid var(--line); padding: 24px 0 40px; color: var(--m
   </div>
 </footer>
 
+<script>
+(function () {
+  var box = document.getElementById('release');
+  var target = new Date(box.getAttribute('data-date')).getTime();
+  var ids = ['d', 'h', 'm', 's'].map(function (k) { return document.getElementById('cd-' + k); });
+  var count = document.getElementById('count');
+  var done = document.getElementById('release-done');
+  function pad(n) { return n < 10 ? '0' + n : String(n); }
+  function tick() {
+    var left = Math.floor((target - Date.now()) / 1000);
+    if (left <= 0) { count.hidden = true; done.hidden = false; return false; }
+    ids[0].textContent = Math.floor(left / 86400);
+    ids[1].textContent = pad(Math.floor(left % 86400 / 3600));
+    ids[2].textContent = pad(Math.floor(left % 3600 / 60));
+    ids[3].textContent = pad(left % 60);
+    return true;
+  }
+  if (tick()) {
+    var t = setInterval(function () { if (!tick()) clearInterval(t); }, 1000);
+  }
+})();
+</script>
 </body>
 </html>

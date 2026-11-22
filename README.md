@@ -1,6 +1,6 @@
 # KISAXIとは
 
-APRS I-Gate ソフトウェアです。地図には OpenStreetMap を使います。
+KISAXI は APRS I-Gate ソフトウェアです。地図には OpenStreetMap を使います。
 対応OSはWindows 10/11（互換モード不要）と Linux（x64 / Raspberry Pi）で動作し、ランタイムのインストールは不要な単体実行ファイルです。
 
 ## 機能
@@ -27,48 +27,48 @@ APRS I-Gate ソフトウェアです。地図には OpenStreetMap を使いま�
 
 ### Windows
 
-1. `dist\aprsigate-windows-x64.exe` を好きなフォルダに置いて実行
+1. `dist\KISAXI-windows-x64.exe` を好きなフォルダに置いて実行
 2. ブラウザで管理画面 (http://127.0.0.1:8073/) が自動で開く
 3. 「設定」タブでコールサイン・パスコード・位置・TNC を設定し、「保存して適用」を押す
 
-設定は exe と同じフォルダの `aprsigate.json` に保存されます。受信した局とパケットは `aprsigate-data.json` に1分ごとと終了時に保存され、次回起動時に保持時間（既定 60 分）以内のものが復元されます。そのフォルダに書き込めない場合は `%APPDATA%\aprsigate\` に保存されます。
+設定は exe と同じフォルダの `kisaxi.json` に保存されます。受信した局とパケットは `kisaxi-data.json` に1分ごとと終了時に保存され、次回起動時に保持時間（既定 60 分）以内のものが復元されます。そのフォルダに書き込めない場合は `%APPDATA%\aprsigate\` に保存されます。
 コンソールウィンドウを閉じると終了します。
 署名していない exe なので、初回起動時に SmartScreen の警告が出たら「詳細情報」→「実行」を選んでください。
 
 ### Linux
 
 ```bash
-chmod +x aprsigate-linux-x64
-./aprsigate-linux-x64
+chmod +x KISAXI-linux-x64
+./KISAXI-linux-x64
 ```
 
 - Raspberry Pi では、機種と OS に合わせて次のファイルを使います（`uname -m` が `aarch64` なら 64bit OS です）
-  - Pi 3 / 4 / 5、Zero 2 W の 64bit OS: `aprsigate-linux-arm64`
-  - Pi 3 / 4、Zero 2 W の 32bit OS: `aprsigate-linux-armv7`
-  - Pi Zero / Zero W: `aprsigate-linux-armv6`（armv7 版は動きません）。CPU が非力なため動作が不安定になる可能性があり、使用はおすすめしません
+  - Pi 3 / 4 / 5、Zero 2 W の 64bit OS: `KISAXI-linux-arm64`
+  - Pi 3 / 4、Zero 2 W の 32bit OS: `KISAXI-linux-armv7`
+  - Pi Zero / Zero W: `KISAXI-linux-armv6`（armv7 版は動きません）。CPU が非力なため動作が不安定になる可能性があり、使用はおすすめしません
 - シリアル TNC を使う場合は、実行ユーザーを `dialout` グループに追加してください: `sudo usermod -aG dialout $USER`
 - Bluetooth で無線機 (TH-D74 / TH-D75 / TM-D750) とつなぐ場合は、ペアリングしてから `sudo ./scripts/bt-tnc-setup.sh` を実行します。`/dev/rfcomm0` ができ、再起動後も使えるように登録されるので、TNC を「KISS シリアル」、ポートを `/dev/rfcomm0` にします（無線機側は KISS モードにして、データの通信先を Bluetooth に）。やめるときは `sudo ./scripts/bt-tnc-setup.sh --remove`
   - Windows では、ペアリング後に「その他の Bluetooth 設定」→「COM ポート」に出る「発信」側の COM を選びます
 - 同じ LAN の別の PC やスマホから管理画面を開くとき（認証機能はないので、信頼できる LAN 内だけで使ってください）
   - **Tailscale の利用をおすすめします。** Pi で `sudo tailscale serve --bg 8073` を実行すれば、待ち受けを変えずに、Tailscale を入れた端末だけから家の中でも外出先でも `https://<Piの名前>.<tailnet名>.ts.net/` で安全に開けます。下の方法は Tailscale を使えないときの代わりです
-  1. `-listen 0.0.0.0:8073` を付けて起動します（例: `./aprsigate-linux-arm64 -nobrowser -listen 0.0.0.0:8073`）。毎回付ける代わりに、止めた状態で `aprsigate.json` の `httpListen` を `"0.0.0.0:8073"` にしても同じです
+  1. `-listen 0.0.0.0:8073` を付けて起動します（例: `./KISAXI-linux-arm64 -nobrowser -listen 0.0.0.0:8073`）。毎回付ける代わりに、止めた状態で `kisaxi.json` の `httpListen` を `"0.0.0.0:8073"` にしても同じです
   2. Pi などで `hostname -I` を実行し、先頭のアドレス（例: `192.168.1.20`）を確かめます
   3. 別の端末のブラウザで `http://192.168.1.20:8073/` を開きます。IP アドレスで開けば設定の保存もできます
   - Raspberry Pi OS は標準ではファイアウォールがありません。ufw を入れている場合は `sudo ufw allow 8073/tcp` を実行します
   - 管理画面には APRS-IS のパスコードも表示され、同じ LAN の誰でも開けてしまいます
-- デスクトップのアイコンから起動したい場合（Raspberry Pi OS など）は、`scripts/aprsigate-start.sh` と `scripts/desktop-setup.sh`（あればアイコン用に `assets/kisaxi_app_icon.png` も）を実行ファイルと同じフォルダに置き、一度だけ `bash desktop-setup.sh` を実行します。デスクトップとメニューの「インターネット」に KISAXI のアイコンができ、ダブルクリックで端末の画面つきで起動します（止めるときはその画面で `Ctrl+C` か画面を閉じる）。機種に合う実行ファイルは自動で選ばれ、すでに動いている（systemd で常駐中など）ときは管理画面だけを開きます。ファイルマネージャーで「実行しますか」と聞かれたら「実行」を選びます。消すときは `bash desktop-setup.sh --remove`
+- デスクトップのアイコンから起動したい場合（Raspberry Pi OS など）は、`scripts/kisaxi-start.sh` と `scripts/desktop-setup.sh`（あればアイコン用に `assets/kisaxi_app_icon.png` も）を実行ファイルと同じフォルダに置き、一度だけ `bash desktop-setup.sh` を実行します。デスクトップとメニューの「インターネット」に KISAXI のアイコンができ、ダブルクリックで端末の画面つきで起動します（止めるときはその画面で `Ctrl+C` か画面を閉じる）。機種に合う実行ファイルは自動で選ばれ、すでに動いている（systemd で常駐中など）ときは管理画面だけを開きます。ファイルマネージャーで「実行しますか」と聞かれたら「実行」を選びます。消すときは `bash desktop-setup.sh --remove`
 
-systemd で常駐させる例 (`/etc/systemd/system/aprsigate.service`、「ユーザー名」は実行するユーザーに置き換え。いまの Raspberry Pi OS には `pi` ユーザーがありません):
+systemd で常駐させる例 (`/etc/systemd/system/kisaxi.service`、「ユーザー名」は実行するユーザーに置き換え。いまの Raspberry Pi OS には `pi` ユーザーがありません):
 
 ```ini
 [Unit]
-Description=APRS I-Gate
+Description=KISAXI
 After=network-online.target
 
 [Service]
 User=ユーザー名
-WorkingDirectory=/home/ユーザー名/aprsigate
-ExecStart=/home/ユーザー名/aprsigate/aprsigate-linux-arm64 -nobrowser
+WorkingDirectory=/home/ユーザー名/kisaxi
+ExecStart=/home/ユーザー名/kisaxi/KISAXI-linux-arm64 -nobrowser
 Restart=always
 
 [Install]
@@ -129,7 +129,7 @@ Go 1.26 以降が必要です。`tools\go` にポータブル版の Go が入っ
 | `src/web.go` | REST API と Server-Sent Events |
 | `src/web/` | 管理画面（Leaflet + OpenStreetMap） |
 | `scripts/bt-tnc-setup.sh` | Bluetooth 無線機を `/dev/rfcommN` として使えるようにする (Linux) |
-| `scripts/aprsigate-start.sh` | ダブルクリック起動用のスクリプト。機種に合う実行ファイルを選んで起動する (Linux) |
+| `scripts/kisaxi-start.sh` | ダブルクリック起動用のスクリプト。機種に合う実行ファイルを選んで起動する (Linux) |
 | `scripts/desktop-setup.sh` | デスクトップとメニューに起動アイコンを作る (Linux) |
 
 ## クレジット

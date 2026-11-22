@@ -11,7 +11,7 @@ func newWXTestApp(t *testing.T) *App {
 	cfg := defaultConfig()
 	cfg.Callsign, cfg.WXEnabled = "JR2TTA", true
 	cfg.Lat, cfg.Lon = 35.6812, 139.7671
-	return NewApp(cfg, filepath.Join(t.TempDir(), "aprsigate.json"), t.TempDir())
+	return NewApp(cfg, filepath.Join(t.TempDir(), "kisaxi.json"), t.TempDir())
 }
 
 func TestWXDataFormat(t *testing.T) {
