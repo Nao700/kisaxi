@@ -12,3 +12,425 @@
 <meta property="og:description" content="Windows と Linux (Raspberry Pi) で動く APRS I-Gate ソフトウェア。インストール不要の単体実行ファイル。">
 <meta property="og:url" content="https://nao700.github.io/kisaxi/">
 <link rel="icon" href="images/icon.png">
+<style>
+:root {
+  --bg: #ffffff;
+  --bg-soft: #f4f6f9;
+  --text: #1c2430;
+  --muted: #5a6575;
+  --line: #dde2ea;
+  --accent: #1f6feb;
+  --accent-soft: #e8f0fe;
+  --warn-bg: #fff6e0;
+  --warn-line: #f0c36d;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12161c;
+    --bg-soft: #1b2129;
+    --text: #e4e8ee;
+    --muted: #9aa4b2;
+    --line: #2c3540;
+    --accent: #5b9dff;
+    --accent-soft: #1d2a3d;
+    --warn-bg: #2e2715;
+    --warn-line: #8a6d2c;
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", Meiryo, sans-serif;
+  line-height: 1.75;
+}
+a { color: var(--accent); }
+.wrap { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+header.top {
+  border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; background: var(--bg); z-index: 10;
+}
+header.top .wrap { display: flex; align-items: center; gap: 12px; height: 56px; }
+header.top img { width: 32px; height: 32px; }
+header.top .name { font-weight: 700; font-size: 1.1rem; }
+header.top nav { margin-left: auto; display: flex; gap: 16px; font-size: .9rem; }
+header.top nav a { color: var(--muted); text-decoration: none; }
+header.top nav a:hover { color: var(--accent); }
+@media (max-width: 640px) { header.top nav { display: none; } }
+
+.hero { padding: 56px 0 40px; text-align: center; }
+.hero img { width: 120px; height: 120px; }
+.hero h1 { font-size: 2.2rem; margin: 12px 0 4px; }
+.hero .lead { font-size: 1.1rem; color: var(--muted); margin: 0 0 8px; }
+.hero .ver { font-size: .9rem; color: var(--muted); margin: 0 0 24px; }
+.btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.btn {
+  display: inline-block; padding: 10px 22px; border-radius: 8px;
+  text-decoration: none; font-weight: 600; border: 1px solid var(--accent);
+}
+.btn.primary { background: var(--accent); color: #fff; }
+.btn.ghost { color: var(--accent); }
+.release { margin: 0 auto 24px; padding: 14px 20px; max-width: 420px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-soft); }
+.release-title { font-size: .95rem; color: var(--muted); }
+.release-title strong { color: var(--text); font-size: 1.05rem; }
+.count { display: flex; justify-content: center; gap: 16px; margin-top: 6px; }
+.count div { min-width: 56px; }
+.count b { display: block; font-size: 1.8rem; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.count span { font-size: .8rem; color: var(--muted); }
+.count[hidden], .release-done[hidden] { display: none; }
+.release-done { font-weight: 700; font-size: 1.1rem; margin-top: 4px; }
+.muted { color: var(--muted); font-size: .9rem; }
+.btn.disabled { color: var(--muted); border-color: var(--line); background: var(--bg-soft); cursor: default; }
+.tags { margin-top: 20px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.tag { font-size: .8rem; padding: 2px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+
+section { padding: 40px 0; border-top: 1px solid var(--line); }
+section h2 { font-size: 1.5rem; margin: 0 0 20px; }
+section h3 { font-size: 1.05rem; margin: 0 0 6px; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.card { background: var(--bg-soft); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+.card p { margin: 0; color: var(--muted); font-size: .92rem; }
+
+.shots { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.shots figure { margin: 0; }
+.shots img { width: 100%; border: 1px solid var(--line); border-radius: 8px; display: block; }
+.shots figcaption { font-size: .85rem; color: var(--muted); margin-top: 6px; }
+
+table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+th { background: var(--bg-soft); }
+.table-scroll { overflow-x: auto; }
+
+ol.steps { padding-left: 1.3em; }
+ol.steps li { margin-bottom: 6px; }
+pre, code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: .88em; }
+pre { background: var(--bg-soft); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; overflow-x: auto; }
+:not(pre) > code { background: var(--bg-soft); padding: 1px 5px; border-radius: 4px; }
+
+.note { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 8px; padding: 12px 16px; }
+.note ul { margin: 0; padding-left: 1.2em; }
+
+.history dt { font-weight: 700; margin-top: 16px; }
+.history dt:first-child { margin-top: 0; }
+.history dt span { font-weight: 400; color: var(--muted); font-size: .85rem; margin-left: 8px; }
+.history dd { margin: 4px 0 0; }
+.history ul { margin: 0; padding-left: 1.2em; }
+
+footer { border-top: 1px solid var(--line); padding: 24px 0 40px; color: var(--muted); font-size: .85rem; text-align: center; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <img src="images/icon.png" alt="">
+    <span class="name">KISAXI</span>
+    <nav>
+      <a href="#features">機能</a>
+      <a href="#screens">画面</a>
+      <a href="#env">対応環境</a>
+      <a href="#start">はじめ方</a>
+      <a href="#extras">付録</a>
+      <a href="#history">更新履歴</a>
+      <a href="#notes">注意事項</a>
+      <a href="#support">応援</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="hero wrap">
+    <img src="images/icon.png" alt="KISAXI アイコン">
+    <h1>KISAXI</h1>
+    <p class="lead">インストール不要で、すぐに I-Gate を立ち上げられる<br>APRS I-Gate ソフトウェア</p>
+    <p class="ver">最新バージョン 1.0.0（2026-11-23）</p>
+    <div class="release" id="release" data-date="2026-11-23T00:00:00+09:00">
+      <div class="release-title">正式リリース <strong>2026年11月23日</strong></div>
+      <div class="count" id="count" aria-live="off">
+        <div><b id="cd-d">--</b><span>日</span></div>
+        <div><b id="cd-h">--</b><span>時間</span></div>
+        <div><b id="cd-m">--</b><span>分</span></div>
+        <div><b id="cd-s">--</b><span>秒</span></div>
+      </div>
+      <div class="release-done" id="release-done" hidden>正式リリースしました</div>
+    </div>
+    <p><a class="btn primary" href="https://github.com/Nao700/kisaxi/releases/latest">ダウンロード（GitHub Releases）</a></p>
+    <div class="tags">
+      <span class="tag">Windows 10 / 11</span>
+      <span class="tag">Linux x64</span>
+      <span class="tag">Raspberry Pi</span>
+      <span class="tag">KISS シリアル / KISS TCP</span>
+      <span class="tag">OpenStreetMap</span>
+    </div>
+  </div>
+
+  <section id="features">
+    <div class="wrap">
+      <h2>主な機能</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>I-Gate（RF ⇄ APRS-IS）</h3>
+          <p>RF で受信したパケットを <code>qAR</code> 付きで APRS-IS へ送出します。<code>TCPIP</code>・<code>NOGATE</code>・<code>RFONLY</code> などを含むものや 30 秒以内の重複は送りません。ローカル局宛のメッセージは RF へ中継します。</p>
+        </div>
+        <div class="card">
+          <h3>デジピータ</h3>
+          <p><code>WIDE1-1</code> と自局コールサイン宛のパケットを中継します。設定で <code>WIDE2-n</code> の中継も選べます。</p>
+        </div>
+        <div class="card">
+          <h3>TNC 接続</h3>
+          <p>KISS シリアル（COM ポート、<code>/dev/ttyUSB0</code> など）と KISS TCP に対応しています。Direwolf や UZ7HO Soundmodem と組み合わせて使えます。</p>
+        </div>
+        <div class="card">
+          <h3>地図表示</h3>
+          <p>OpenStreetMap 上に APRS シンボル、コールサイン、移動局の軌跡（日付や時間で区切るかどうかは設定で選べます）を表示します。局をクリックすると距離・方位・速度・高度・コメント・生パケットが見られます。重なったアイコンはクリックで広げて 1 局ずつ選べます。</p>
+        </div>
+        <div class="card">
+          <h3>ビーコン・オブジェクト</h3>
+          <p>RF と APRS-IS のビーコンをそれぞれの間隔で送信します。オブジェクトとアイテムは最大 10 件まで登録でき、座標は地図のクリックで指定できます。</p>
+        </div>
+        <div class="card">
+          <h3>パケット解析</h3>
+          <p>通常位置、圧縮位置、Mic-E、オブジェクト、アイテム、メッセージ、ステータス、NMEA、気象に対応しています。Shift_JIS のコメントも文字化けしません。</p>
+        </div>
+        <div class="card">
+          <h3>局リスト・パケットモニター</h3>
+          <p>受信局を検索し、RF / IS で絞り込めます。パケットモニターは RF 受信・IS 受信・送信・ゲートを色分けして表示します。</p>
+        </div>
+        <div class="card">
+          <h3>メッセージ</h3>
+          <p>メッセージの送受信ができます。ACK は自動で返し、未達の場合は最大 5 回まで再送します。</p>
+        </div>
+        <div class="card">
+          <h3>ログと復元</h3>
+          <p>パケットは日別のログに保存されます。受信した局は終了時に保存され、次回起動時に復元されます。</p>
+        </div>
+        <div class="card">
+          <h3>ウェザーステーション</h3>
+          <p>Davis（Vantage Pro2 / Vue）の現在値を読み取り、自局とは別の SSID（既定は自局コール-13）の位置付き APRS WX として APRS-IS と RF に送信します。「気象」タブに現在値、本日の最高・最低、グラフ（6時間〜7日）を表示します。Davis の屋外センサーの電波を RTL-SDR で直接受信することもできます（β版）。433MHz 帯の簡易気象センサーは rtl_433 経由で取り込めます（β版）。</p>
+        </div>
+        <div class="card">
+          <h3>自動更新</h3>
+          <p>新しいバージョンが出ると画面上部にお知らせが出て、ボタン一つでダウンロードと入れ替え、再起動までできます。ダウンロードしたファイルはチェックサムなどを確かめてから入れ替えます。設定で、見つかったら自動で更新することもできます（既定はオフ）。</p>
+        </div>
+        <div class="card">
+          <h3>最長距離 (DX) の記録</h3>
+          <p>RF で直接受信した最も遠い局を記録して画面上部に表示します。更新するとステータスで送信し、aprs.fi のステータス欄に表示されます。リセットのタイミング（毎日・毎時）と距離の単位（km / mi）は設定で選べます。</p>
+        </div>
+        <div class="card">
+          <h3>出力・アンテナ (PHG) と通達範囲</h3>
+          <p>送信出力・アンテナ高・利得・指向を設定すると、ビーコンに PHG を付けて送信します。計算した通達範囲を、地図に自局を中心とした円で表示します。</p>
+        </div>
+        <div class="card">
+          <h3>位置あいまい局の表示</h3>
+          <p>座標の桁を伏せて送っている局（Mic-E を含む）は、マーカーにカーソルを乗せるとその範囲をピンクの四角で地図に表示し、マーカーを範囲の中心に合わせます。</p>
+        </div>
+        <div class="card">
+          <h3>aprs.fi で機種名を表示</h3>
+          <p>正式に登録された宛先 (TOCALL) <code>APKSXI</code> で送信するので、aprs.fi などで KISAXI からの送信だとわかります。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="screens">
+    <div class="wrap">
+      <h2>画面</h2>
+      <p>操作はすべてブラウザの管理画面から行います。</p>
+      <div class="shots">
+        <!-- 画像は docs/images/ に置く。ファイルが無いうちはその枠を表示しない -->
+        <figure>
+          <img src="images/screen-map.png" alt="地図画面" loading="lazy" onerror="this.parentNode.remove()">
+          <figcaption>地図：受信した局と移動局の軌跡</figcaption>
+        </figure>
+        <figure>
+          <img src="images/screen-monitor.png" alt="パケットモニター" loading="lazy" onerror="this.parentNode.remove()">
+          <figcaption>パケットモニター：RF / IS / 送信 / ゲートを色分け</figcaption>
+        </figure>
+        <figure>
+          <img src="images/screen-settings.png" alt="設定画面" loading="lazy" onerror="this.parentNode.remove()">
+          <figcaption>設定：コールサイン・位置・TNC・I-Gate の設定</figcaption>
+        </figure>
+      </div>
+      <p id="shots-empty" hidden>画面の写真は準備中です。</p>
+      <script>
+        window.addEventListener('load', function () {
+          if (!document.querySelector('.shots figure')) document.getElementById('shots-empty').hidden = false;
+        });
+      </script>
+    </div>
+  </section>
+
+  <section id="env">
+    <div class="wrap">
+      <h2>対応環境</h2>
+      <div class="table-scroll">
+        <table>
+          <tr><th>OS</th><th>ファイル</th></tr>
+          <tr><td>Windows 10 / 11（64bit）</td><td><code>KISAXI-windows-x64.exe</code></td></tr>
+          <tr><td>Linux（x64）</td><td><code>KISAXI-linux-x64</code></td></tr>
+          <tr><td>Raspberry Pi 3 / 4 / 5、Zero 2 W（64bit OS）</td><td><code>KISAXI-linux-arm64</code></td></tr>
+          <tr><td>Raspberry Pi 3 / 4、Zero 2 W（32bit OS）</td><td><code>KISAXI-linux-armv7</code></td></tr>
+          <tr><td>Raspberry Pi Zero / Zero W（非推奨）</td><td><code>KISAXI-linux-armv6</code></td></tr>
+        </table>
+      </div>
+      <p>Raspberry Pi で <code>uname -m</code> が <code>aarch64</code> なら 64bit OS です。Pi Zero / Zero W は CPU が非力で動作が不安定になる可能性があるため、おすすめしません。</p>
+      <p>どれもランタイムのインストールは不要な単体実行ファイルです。Windows で互換モードを使う必要もありません。</p>
+    </div>
+  </section>
+
+  <section id="start">
+    <div class="wrap">
+      <h2>はじめ方</h2>
+
+      <h3>Windows</h3>
+      <ol class="steps">
+        <li><code>KISAXI-windows-x64.exe</code> を好きなフォルダに置いて実行します。</li>
+        <li>ブラウザで管理画面（<code>http://127.0.0.1:8073/</code>）が自動で開きます。</li>
+        <li>「設定」タブでコールサイン・パスコード・位置・TNC を入力し、「保存して適用」を押します。</li>
+      </ol>
+      <p>署名していない exe のため、初回起動時に SmartScreen の警告が出たら「詳細情報」から「実行」を選んでください。コンソールウィンドウを閉じると終了します。</p>
+
+      <h3>Linux / Raspberry Pi</h3>
+<pre>chmod +x KISAXI-linux-arm64
+./KISAXI-linux-arm64</pre>
+      <ul>
+        <li>シリアル TNC を使う場合は、実行ユーザーを <code>dialout</code> グループに追加します：<code>sudo usermod -aG dialout $USER</code></li>
+        <li>別の PC やスマホから管理画面を開くときは、Tailscale の利用をおすすめします。Pi で <code>sudo tailscale serve --bg 8073</code> を実行すれば、Tailscale を入れた端末だけから、家の中でも外出先でも安全に開けます。Tailscale を使えないときは <code>-listen 0.0.0.0:8073</code> を付けて起動しますが、認証機能がないので信頼できる LAN 内だけで使ってください。</li>
+      </ul>
+      <p>systemd で常駐させる例（<code>/etc/systemd/system/kisaxi.service</code>）。「ユーザー名」は実行するユーザーに置き換えてください。いまの Raspberry Pi OS には <code>pi</code> ユーザーがありません。</p>
+<pre>[Unit]
+Description=APRS I-Gate
+After=network-online.target
+
+[Service]
+User=ユーザー名
+WorkingDirectory=/home/ユーザー名/kisaxi
+ExecStart=/home/ユーザー名/kisaxi/KISAXI-linux-arm64 -nobrowser
+Restart=always
+
+[Install]
+WantedBy=multi-user.target</pre>
+
+      <h3>設定のポイント</h3>
+      <div class="table-scroll">
+        <table>
+          <tr><th>項目</th><th>内容</th></tr>
+          <tr><td>パスコード</td><td>APRS-IS のパスコードを入力します。<code>-1</code> にすると受信専用になります。</td></tr>
+          <tr><td>シンボル</td><td>I-Gate ではテーブル <code>I</code> とシンボル <code>&amp;</code> の組み合わせが一般的です。</td></tr>
+          <tr><td>フィルター</td><td><code>m/50</code> で自局から半径 50 km の局を受信します。<code>r/緯度/経度/距離</code> なども使えます。</td></tr>
+          <tr><td>Direwolf</td><td>接続方式を「KISS TCP」、アドレスを <code>127.0.0.1:8001</code> にします。</td></tr>
+          <tr><td>UZ7HO Soundmodem</td><td>Soundmodem 側で KISS サーバーを有効にし、アドレスを <code>127.0.0.1:8100</code> にします。</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="extras">
+    <div class="wrap">
+      <h2>付録</h2>
+
+      <h3>Raspberry Pi のデスクトップから起動する</h3>
+      <p>毎回ターミナルでコマンドを打たずに、デスクトップやメニューのアイコンをダブルクリックして起動できるようにするスクリプトです。</p>
+      <div class="btns" style="justify-content:flex-start">
+        <a class="btn primary" href="extras/kisaxi-pi-launcher.zip" download>kisaxi-pi-launcher.zip をダウンロード</a>
+      </div>
+      <ol class="steps">
+        <li>zip の中の <code>kisaxi-start.sh</code>・<code>desktop-setup.sh</code>・<code>kisaxi_app_icon.png</code> を、実行ファイルと同じフォルダ（例：<code>~/kisaxi</code>）に置きます。</li>
+        <li>ターミナルで一度だけ次を実行します（sudo は不要です）。
+<pre>bash ~/kisaxi/desktop-setup.sh</pre></li>
+        <li>デスクトップとメニューの「インターネット」に KISAXI のアイコンができます。ダブルクリックすると、ターミナルの画面つきで起動して管理画面が開きます。</li>
+      </ol>
+      <ul>
+        <li>「このファイルを実行しますか」と聞かれたら「実行」を選びます。</li>
+        <li>止めるときは、開いたターミナルの画面で <code>Ctrl+C</code> を押すか、画面を閉じます。</li>
+        <li>機種に合う実行ファイル（arm64 / armv7 / armv6 / x64）は自動で選ばれます。</li>
+        <li>systemd で常駐させている間にアイコンを押すと、二重には起動せず管理画面だけが開きます。</li>
+        <li>アイコンを消すときは <code>bash ~/kisaxi/desktop-setup.sh --remove</code> を実行します。</li>
+      </ul>
+      <p>ファイルを個別に見る：<a href="extras/pi-launcher/kisaxi-start.sh">kisaxi-start.sh</a> ・ <a href="extras/pi-launcher/desktop-setup.sh">desktop-setup.sh</a> ・ <a href="extras/pi-launcher/kisaxi_app_icon.png">kisaxi_app_icon.png</a></p>
+
+      <h3>Bluetooth で無線機とつなぐ（Linux / Raspberry Pi）</h3>
+      <p>TH-D74 / TH-D75 / TM-D750 を Bluetooth で TNC として使えるように、<code>/dev/rfcomm0</code> を作るスクリプトです。再起動後も自動で使えるように登録します。実機での動作確認は TM-D750 で行っています。</p>
+      <div class="btns" style="justify-content:flex-start">
+        <a class="btn primary" href="extras/bluetooth/bt-tnc-setup.sh" download>bt-tnc-setup.sh をダウンロード</a>
+      </div>
+      <ol class="steps">
+        <li>無線機の Bluetooth をオンにして、Pi とペアリングします（デスクトップ右上の Bluetooth アイコン、または <code>bluetoothctl</code> で）。</li>
+        <li>ダウンロードしたファイルを実行ファイルと同じフォルダ（例：<code>~/kisaxi</code>）に置き、ターミナルで次を実行します。
+<pre>sudo bash ~/kisaxi/bt-tnc-setup.sh</pre></li>
+        <li>KISAXI の「設定」で TNC を「KISS シリアル」、ポートを <code>/dev/rfcomm0</code> にして「保存して適用」を押します。</li>
+      </ol>
+      <ul>
+        <li>無線機側は KISS モードにして、データの通信先を Bluetooth にします。</li>
+        <li>シリアルポートのチャンネルを自動で調べられないときは番号を聞かれます。TM-D750 は 27 でした。</li>
+        <li>やめるときは <code>sudo bash ~/kisaxi/bt-tnc-setup.sh --remove</code> を実行します。</li>
+        <li>Windows ではスクリプトは不要です。ペアリング後に「その他の Bluetooth 設定」→「COM ポート」に出る「発信」側の COM を選びます。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="history">
+    <div class="wrap">
+      <h2>更新履歴</h2>
+      <dl class="history">
+        <dt>1.0.0 <span>2026-11-23</span></dt>
+        <dd><ul><li>KISAXI の最初の正式リリース</li></ul></dd>
+      </dl>
+    </div>
+  </section>
+
+  <section id="notes">
+    <div class="wrap">
+      <h2>注意事項</h2>
+      <div class="note">
+        <ul>
+          <li>RF で送信するにはアマチュア無線局の免許が必要です。</li>
+          <li>送信パス（<code>WIDE1-1</code> など）は地域の運用ルールに合わせてください。</li>
+          <li>管理画面には認証機能がありません。<code>-listen 0.0.0.0</code> で公開するときは、信頼できる LAN 内だけで使ってください。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+  <section id="support">
+    <div class="wrap">
+      <h2>開発を応援する</h2>
+      <p>KISAXI は無料で使えます。開発を応援していただける方は、ドネーションをご検討ください。</p>
+      <p><a class="btn primary" href="https://github.com/sponsors/Nao700" target="_blank" rel="noopener">GitHub Sponsors で応援する</a></p>
+      <p class="muted">GitHub のアカウントで、一度きりの支援も毎月の支援も選べます。</p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    KISAXI — Developed by JR2TTA Nao ・ <a href="https://github.com/Nao700/kisaxi">GitHub</a>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var box = document.getElementById('release');
+  var target = new Date(box.getAttribute('data-date')).getTime();
+  var ids = ['d', 'h', 'm', 's'].map(function (k) { return document.getElementById('cd-' + k); });
+  var count = document.getElementById('count');
+  var done = document.getElementById('release-done');
+  function pad(n) { return n < 10 ? '0' + n : String(n); }
+  function tick() {
+    var left = Math.floor((target - Date.now()) / 1000);
+    if (left <= 0) { count.hidden = true; done.hidden = false; return false; }
+    ids[0].textContent = Math.floor(left / 86400);
+    ids[1].textContent = pad(Math.floor(left % 86400 / 3600));
+    ids[2].textContent = pad(Math.floor(left % 3600 / 60));
+    ids[3].textContent = pad(left % 60);
+    return true;
+  }
+  if (tick()) {
+    var t = setInterval(function () { if (!tick()) clearInterval(t); }, 1000);
+  }
+})();
+</script>
+</body>
+</html>
