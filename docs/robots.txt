@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://nao700.github.io/kisaxi/sitemap.xml
