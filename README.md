@@ -1,7 +1,13 @@
-# KISAXIとは
+# KISAXI
+
+**KISAXI** is free APRS I-Gate software (single executable with a web UI) for Windows and Linux, including Raspberry Pi. The documentation below is in Japanese.
 
 KISAXI は APRS I-Gate ソフトウェアです。地図には OpenStreetMap を使います。
-対応OSはWindows 10/11（互換モード不要）と Linux（x64 / Raspberry Pi）で動作し、ランタイムのインストールは不要な単体実行ファイルです。
+Windows 10/11（互換モード不要）と Linux（x64 / arm64 / armv7 / armv6、Raspberry Pi を含む）で動作し、ランタイムのインストールは不要な単体実行ファイルです。
+
+- 紹介ページ: https://nao700.github.io/kisaxi/
+- ダウンロード: [Releases の最新版](https://github.com/Nao700/kisaxi/releases/latest)（`KISAXI-windows-x64.exe`、`KISAXI-linux-x64`、`KISAXI-linux-arm64`、`KISAXI-linux-armv7`、`KISAXI-linux-armv6`、全部入りの `KISAXI-all-v*.zip`）
+- 開発の応援: KISAXI は無料で使えます。ドネーションは [GitHub Sponsors](https://github.com/sponsors/Nao700) から
 
 ## 機能
 
@@ -27,7 +33,7 @@ KISAXI は APRS I-Gate ソフトウェアです。地図には OpenStreetMap を
 
 ### Windows
 
-1. `dist\KISAXI-windows-x64.exe` を好きなフォルダに置いて実行
+1. [Releases](https://github.com/Nao700/kisaxi/releases/latest) から `KISAXI-windows-x64.exe` をダウンロードし、好きなフォルダに置いて実行
 2. ブラウザで管理画面 (http://127.0.0.1:8073/) が自動で開く
 3. 「設定」タブでコールサイン・パスコード・位置・TNC を設定し、「保存して適用」を押す
 
@@ -38,7 +44,7 @@ KISAXI は APRS I-Gate ソフトウェアです。地図には OpenStreetMap を
 ### Linux
 
 ```bash
-chmod +x KISAXI-linux-x64
+chmod +x KISAXI-linux-x64   # Releases からダウンロードしたファイル
 ./KISAXI-linux-x64
 ```
 
