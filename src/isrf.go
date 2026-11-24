@@ -4,7 +4,6 @@ package main
 
 import (
 	"log"
-	"strings"
 	"time"
 )
 
@@ -16,13 +15,8 @@ func isRFSelected(p *Packet, cfg Config) bool {
 	if cfg.IStoRFCalls != "" && noRF(cfg.IStoRFCalls, p.Src) {
 		return true
 	}
-	if cfg.IStoRFComments != "" && p.HasPos {
-		c := strings.ToUpper(p.Comment + " " + p.MicEMsg) // Mic-E のメッセージ (In Service など) はコメントではなく別欄に入る
-		for _, w := range splitComments(cfg.IStoRFComments) {
-			if strings.Contains(c, strings.ToUpper(w)) {
-				return true
-			}
-		}
+	if cfg.IStoRFMicE != "" && p.HasPos && p.MicEMsg == cfg.IStoRFMicE {
+		return true
 	}
 	return false
 }
