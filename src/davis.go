@@ -14,8 +14,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"go.bug.st/serial"
 )
 
 const (
@@ -270,7 +268,7 @@ func (d *DavisClient) open(ctx context.Context) (io.ReadWriteCloser, error) {
 	if d.cfg.WXSerialPort == "" {
 		return nil, errors.New("ロガーのシリアルポートが未設定です")
 	}
-	return serial.Open(d.cfg.WXSerialPort, &serial.Mode{BaudRate: d.cfg.WXBaud})
+	return openSerial(d.cfg.WXSerialPort, d.cfg.WXBaud)
 }
 
 func (d *DavisClient) Run(ctx context.Context) {

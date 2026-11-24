@@ -27,7 +27,7 @@ func TestBeaconPHG(t *testing.T) {
 	cfg := defaultConfig()
 	cfg.PHGEnabled, cfg.PHGPower, cfg.PHGHeight, cfg.PHGGain = true, 25, 6.1, 3
 	b := beaconBody(cfg)
-	if !strings.HasSuffix(b, "E&PHG5130KISAXI") {
+	if !strings.HasSuffix(b, "E&PHG5130/KISAXI") {
 		t.Errorf("beacon %q", b)
 	}
 	if p, err := ParseTNC2("JA1ABC>APKSXI:" + b); err != nil || !p.HasPos || p.Symbol() != "I&" {

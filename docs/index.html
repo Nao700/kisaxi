@@ -146,7 +146,7 @@ footer { border-top: 1px solid var(--line); padding: 24px 0 40px; color: var(--m
     <img src="images/icon.png" alt="KISAXI アイコン">
     <h1>KISAXI</h1>
     <p class="lead">インストール不要で、すぐに I-Gate を立ち上げられる<br>APRS I-Gate ソフトウェア</p>
-    <p class="ver">最新バージョン 1.0.0（2026-11-23）</p>
+    <p class="ver">最新バージョン 1.0.1（2026-11-24）</p>
     <div class="release" id="release" data-date="2026-11-23T00:00:00+09:00">
       <div class="release-title">正式リリース <strong>2026年11月23日</strong></div>
       <div class="count" id="count" aria-live="off">
@@ -376,8 +376,15 @@ WantedBy=multi-user.target</pre>
     <div class="wrap">
       <h2>更新履歴</h2>
       <dl class="history">
+        <dt>1.0.1 <span>2026-11-24</span></dt>
+        <dd><ul>
+          <li>デジピータで UIflood（KNn-N など地域限定パス）と UItrace（TRACEn-N）の中継に対応</li>
+          <li>APRS-IS から RF への位置情報の送出を、コールサイン名指し・ポジションコメントごとに設定できるように</li>
+          <li>PHG 付きビーコンのコメント前に / を入れ、TM-D710 などでコメント先頭の 1 文字が欠けるのを解消</li>
+          <li>シリアルポートを開けないときのエラーを日本語に</li>
+        </ul></dd>
         <dt>1.0.0 <span>2026-11-23</span></dt>
-        <dd><ul><li>KISAXI の最初の正式リリース</li></ul></dd>
+        <dd><ul><li>APRS I-Gate「KISAXI」を公開</li></ul></dd>
       </dl>
     </div>
   </section>

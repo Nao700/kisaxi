@@ -259,7 +259,7 @@
           <div class="tnc-serial">
             <div class="row">
               <label>ポート
-                <input name="serialPort" list="ports" placeholder="COM3 / /dev/ttyUSB0">
+                <input name="serialPort" list="ports" placeholder="COM3 / /dev/ttyUSB0 (一覧にない場合は直接入力できます)">
                 <datalist id="ports"></datalist>
               </label>
               <label>速度
@@ -289,12 +289,25 @@
         <fieldset>
           <legend>ゲート</legend>
           <label class="chk"><input type="checkbox" name="rfToIs"> RF → APRS-IS ゲート</label>
-          <label class="chk"><input type="checkbox" name="isToRf"> APRS-IS → RF ゲート (ローカル局宛メッセージ)</label>
+          <label class="chk"><input type="checkbox" name="isToRf"> APRS-IS → RF ゲート (ローカル局宛メッセージ・条件に合う局の位置情報)</label>
           <div class="row">
             <label>ローカル局とみなす時間 (分) <input name="localHeardMin" type="number" min="1"></label>
             <label>IS→RF 最大 (件/分) <input name="maxIsToRfPerMin" type="number" min="1"></label>
           </div>
           <label>IS→RF 送信パス <input name="isToRfPath" placeholder="WIDE1-1 (空欄で直接)"></label>
+          <label>送出する局 (コールサイン名指し) <input name="isToRfCalls" placeholder="例: JA1ABC, JA2XYZ-9, JA3*"></label>
+          <label>送出するポジションコメント (Mic-E の状態) <select name="isToRfMicE">
+            <option value="">指定なし</option>
+            <option value="Off Duty">Off Duty (勤務外)</option>
+            <option value="En Route">En Route (移動中)</option>
+            <option value="In Service">In Service (運用中)</option>
+            <option value="Returning">Returning (帰投中)</option>
+            <option value="Committed">Committed (任務中)</option>
+            <option value="Special">Special</option>
+            <option value="Priority">Priority (優先)</option>
+            <option value="Emergency">Emergency (緊急)</option>
+          </select></label>
+          <p class="hint">APRS-IS で受けた位置情報を、RF へサードパーティ形式で送出する条件です。局指定・ポジションコメントのうち、設定したもののどちらかに合う局だけを送出します。すべて空欄なら位置情報は送出しません (従来のローカル局宛メッセージのゲートだけ動きます)。すでに RF で聞こえている局は送りません。ポジションコメントは Mic-E の状態 (In Service・En Route など) で、選んだ状態の局だけに合います。「IS→RF 最大 (件/分)」の上限と送信パスを共用します。</p>
           <label>除外局 (完全無視) <input name="noRfCalls" placeholder="例: JA1ABC, JA2XYZ-9, JA3*"></label>
           <p class="hint">ここに書いた局は完全に無視します。RF・APRS-IS どちらの受信もなかったことにし (一覧・地図・メッセージ・DX・IS への転送・デジピートの対象外)、その局宛のメッセージも送りません。カンマ区切り。JA1ABC は全 SSID、JA1ABC-9 はその SSID のみ、JA3* は前方一致。</p>
         </fieldset>
@@ -303,6 +316,10 @@
           <legend>デジピータ</legend>
           <label class="chk"><input type="checkbox" name="digiEnabled"> デジピータとして中継する (WIDE1-1・自局コール指定)</label>
           <label class="chk"><input type="checkbox" name="digiWide"> WIDE2-n も中継する (広域デジ)</label>
+          <label>UIflood のエイリアス (空欄で無効) <input name="digiAliases" placeholder="例: KN (神奈川), NS (長崎), AC (愛知)"></label>
+          <label>UItrace のエイリアス (空欄で無効) <input name="digiTraceAliases" placeholder="例: TRACE"></label>
+          <label>UIflood/UItrace 中継の上限 (件/分) <input name="digiAliasPerMin" type="number" min="1"></label>
+          <p class="hint">UIflood: KN3-3 のような地域限定パスを、自局コールを入れずに残りホップだけ 1 減らして中継します (KN3-3 → KN3-2 → … → KN3*)。UItrace: TRACE3-3 のようなパスを、自局コールを残しながら 1 減らして中継します (TRACE3-3 → 自局*,TRACE3-2)。どちらもカンマ区切り・英字のみで、n は 1〜7 です。既存の中継局と範囲が重ならないか確認してから設定してください。</p>
           <p class="hint">WIDE1-1 の中継 (フィルインデジ) で、モービル機やハンディ機に自局パケットの中継が返り、電測に使えます。WIDE2-n の中継は送信が増えるため、高所設置の局などで地域の運用ルールを確認してから有効にしてください。TNC 接続時のみ動作します。</p>
         </fieldset>
 

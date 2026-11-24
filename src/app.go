@@ -52,9 +52,10 @@ type App struct {
 	dup    *dupCache
 	recent *ring
 
-	hmu       sync.Mutex
-	rfHeard   map[string]time.Time
-	rfGateLog []time.Time
+	hmu          sync.Mutex
+	rfHeard      map[string]time.Time
+	rfGateLog    []time.Time
+	digiAliasLog []time.Time
 
 	smu   sync.Mutex
 	stats Stats
@@ -307,6 +308,7 @@ func (a *App) onISLine(line string) {
 	a.handleMessage(p, "IS")
 	if cfg.IStoRF {
 		a.gateToRF(p, cfg)
+		a.gatePosToRF(p, cfg)
 	}
 }
 
@@ -524,6 +526,10 @@ func beaconBody(cfg Config) string {
 	ext := ""
 	if cfg.PHGEnabled {
 		ext = phgCode(cfg.PHGPower, cfg.PHGHeight, cfg.PHGGain, cfg.PHGDir)
+		// TM-D710 などは PHG の直後の1文字を飲み込むので、慣例どおり "/" で区切る (43文字に収まるときだけ)
+		if cfg.Comment != "" && len(ext)+1+len(cfg.Comment) <= 43 {
+			ext += "/"
+		}
 	}
 	return "=" + formatLat(cfg.Lat) + cfg.SymbolTable + formatLon(cfg.Lon) + cfg.Symbol + ext + cfg.Comment
 }
