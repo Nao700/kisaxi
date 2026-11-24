@@ -83,7 +83,7 @@ func (t *TNC) open(ctx context.Context) (io.ReadWriteCloser, error) {
 		if t.cfg.SerialPort == "" {
 			return nil, errors.New("シリアルポートが未設定です")
 		}
-		return serial.Open(t.cfg.SerialPort, &serial.Mode{BaudRate: t.cfg.Baud})
+		return openSerial(t.cfg.SerialPort, t.cfg.Baud)
 	case "kiss-tcp":
 		d := net.Dialer{Timeout: 10 * time.Second, KeepAlive: 30 * time.Second}
 		return d.DialContext(ctx, "tcp", t.cfg.KissTCPAddr)
@@ -191,4 +191,28 @@ func listSerialPorts() []string {
 		return []string{}
 	}
 	return ports
+}
+
+// openSerial はシリアルポートを開く。失敗時は選択中のポート名を入れた日本語のエラーにする。
+func openSerial(port string, baud int) (serial.Port, error) {
+	p, err := serial.Open(port, &serial.Mode{BaudRate: baud})
+	if err != nil {
+		return nil, serialOpenError(port, err)
+	}
+	return p, nil
+}
+
+func serialOpenError(port string, err error) error {
+	var pe *serial.PortError
+	if errors.As(err, &pe) {
+		switch pe.Code() {
+		case serial.PortBusy:
+			return fmt.Errorf("%s は他のプログラムが使用中、またはポート番号が違います (UI-View などを閉じるか、デバイスマネージャーで番号を確認してください)", port)
+		case serial.PortNotFound:
+			return fmt.Errorf("%s が見つかりません。ポート番号を確認してください (デバイスマネージャーで確認できます)", port)
+		case serial.PermissionDenied:
+			return fmt.Errorf("%s を開く権限がありません", port)
+		}
+	}
+	return fmt.Errorf("%s を開けません: %w", port, err)
 }
