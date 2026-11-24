@@ -51,6 +51,9 @@ type Config struct {
 	DigiEnabled bool `json:"digiEnabled"` // デジピータ (WIDE1-1・自局コール宛を中継)
 	DigiWide    bool `json:"digiWide"`    // WIDE2-n も中継する
 
+	DigiAliases     string `json:"digiAliases"`     // 地域エイリアス (カンマ区切り。例: KN,NS,AC)。KNn-N 形式を中継する。空欄で無効
+	DigiAliasPerMin int    `json:"digiAliasPerMin"` // 地域エイリアス中継の上限 (件/分)
+
 	BeaconRF     bool   `json:"beaconRf"`
 	BeaconRFMin  int    `json:"beaconRfMin"`
 	BeaconRFPath string `json:"beaconRfPath"`
@@ -122,6 +125,7 @@ func defaultConfig() Config {
 		LocalHeardMin:    30,
 		IStoRFPath:       "WIDE1-1",
 		MaxIStoRFPerMin:  10,
+		DigiAliasPerMin:  10,
 		BeaconRF:         false,
 		BeaconRFMin:      30,
 		BeaconRFPath:     "WIDE1-1",
@@ -172,6 +176,9 @@ func (c *Config) Normalize() {
 	}
 	if c.LocalHeardMin <= 0 {
 		c.LocalHeardMin = d.LocalHeardMin
+	}
+	if c.DigiAliasPerMin <= 0 {
+		c.DigiAliasPerMin = d.DigiAliasPerMin
 	}
 	if c.MaxIStoRFPerMin <= 0 {
 		c.MaxIStoRFPerMin = d.MaxIStoRFPerMin
@@ -243,6 +250,7 @@ func (c *Config) Normalize() {
 	c.WXSerialPort = strings.TrimSpace(c.WXSerialPort)
 	c.WXTCPAddr = strings.TrimSpace(c.WXTCPAddr)
 	c.NoRFCalls = strings.ToUpper(strings.Join(strings.FieldsFunc(c.NoRFCalls, func(r rune) bool { return r == ',' || r == ' ' || r == '、' || r == '\n' }), ","))
+	c.DigiAliases = strings.ToUpper(strings.Join(strings.FieldsFunc(c.DigiAliases, func(r rune) bool { return r == ',' || r == ' ' || r == '、' || r == '\n' }), ","))
 	c.IStoRFPath = strings.ToUpper(strings.TrimSpace(c.IStoRFPath))
 	c.BeaconRFPath = strings.ToUpper(strings.TrimSpace(c.BeaconRFPath))
 }
@@ -287,6 +295,11 @@ func (c *Config) Validate() error {
 			if _, err := encodeAddr(d, false, false); err != nil {
 				return errors.New("パスの指定が正しくありません: " + d)
 			}
+		}
+	}
+	for _, al := range splitAliases(c.DigiAliases) {
+		if err := checkAlias(al); err != nil {
+			return err
 		}
 	}
 	switch c.TNCType {
