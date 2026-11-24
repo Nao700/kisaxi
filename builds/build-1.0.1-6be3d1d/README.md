@@ -1,7 +1,7 @@
-# KISAXI 1.0.1 実行ファイル (build-1.0.1-6be3d1d)
+# KISAXI 1.0.1
 
 KISAXI は APRS I-Gate ソフトウェアです。単体の実行ファイルで、ランタイムのインストールは不要です。
-ソースは master の 6be3d1d (Ver.1.0.1) です。詳しい使い方はリポジトリの [README.md](../../README.md) を見てください。
+詳しい使い方は [リポジトリの README](https://github.com/Nao700/kisaxi#readme)、紹介ページは https://nao700.github.io/kisaxi/ を見てください。
 
 ## どれを使うか
 
@@ -32,4 +32,3 @@ KISAXI は APRS I-Gate ソフトウェアです。単体の実行ファイルで
 
 - APRS は双方向通信が原則です。受信専用の I-Gate の運用はお控えください。
 - 管理画面には認証がありません。LAN の外へ公開しないでください。
-- Linux x64 版のみ起動確認済みです。他は実機では未確認です。
