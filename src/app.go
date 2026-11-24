@@ -524,6 +524,10 @@ func beaconBody(cfg Config) string {
 	ext := ""
 	if cfg.PHGEnabled {
 		ext = phgCode(cfg.PHGPower, cfg.PHGHeight, cfg.PHGGain, cfg.PHGDir)
+		// TM-D710 などは PHG の直後の1文字を飲み込むので、慣例どおり "/" で区切る (43文字に収まるときだけ)
+		if cfg.Comment != "" && len(ext)+1+len(cfg.Comment) <= 43 {
+			ext += "/"
+		}
 	}
 	return "=" + formatLat(cfg.Lat) + cfg.SymbolTable + formatLon(cfg.Lon) + cfg.Symbol + ext + cfg.Comment
 }

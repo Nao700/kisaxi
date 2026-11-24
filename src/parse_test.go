@@ -173,3 +173,30 @@ func TestNoRF(t *testing.T) {
 		t.Error("empty list")
 	}
 }
+
+func TestBeaconPHGSeparator(t *testing.T) {
+	cfg := defaultConfig()
+	cfg.PHGEnabled, cfg.PHGPower, cfg.PHGHeight, cfg.PHGGain = true, 5, 10, 3
+	cfg.Comment = "W1,KNn-N Yokohama 144.640/9600"
+	b := beaconBody(cfg)
+	if !strings.Contains(b, "PHG2230/W1,KNn-N") {
+		t.Errorf("PHG の直後に / がない: %q", b)
+	}
+	p, _ := ParseTNC2("JA1ABC>APKSXI:" + b)
+	if p.Comment != "PHG2230/W1,KNn-N Yokohama 144.640/9600" {
+		t.Errorf("comment %q", p.Comment)
+	}
+	cfg.Comment = ""
+	if b := beaconBody(cfg); !strings.HasSuffix(b, "PHG2230") {
+		t.Errorf("コメントなしでは / を付けない: %q", b)
+	}
+	cfg.Comment = strings.Repeat("x", 36) // PHG 7 + 36 = 43 文字ちょうどは / を足さない
+	if b := beaconBody(cfg); strings.Contains(b, "PHG2230/") {
+		t.Errorf("43文字を超える: %q", b)
+	}
+	cfg.PHGEnabled = false
+	cfg.Comment = "hello"
+	if b := beaconBody(cfg); !strings.HasSuffix(b, "hello") || strings.Contains(b, "PHG") {
+		t.Errorf("PHGなし %q", b)
+	}
+}
