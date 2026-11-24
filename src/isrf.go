@@ -1,6 +1,6 @@
 package main
 
-// APRS-IS → RF の送出条件 (局指定・緯度経度の範囲・ポジションのコメント)
+// APRS-IS → RF の送出条件 (局指定・ポジションのコメント)
 
 import (
 	"log"
@@ -9,16 +9,11 @@ import (
 )
 
 // isRFSelected は APRS-IS から受けたパケットを RF へ送出する条件に合うかを返す。
-// 局指定・緯度経度の範囲・コメントのうち、設定したもののどれか 1 つでも合えば true (OR)。
+// 局指定・コメントのうち、設定したもののどれか 1 つでも合えば true (OR)。
 // 何も設定されていなければ false (位置情報は送出しない)。
-// 位置を持たないパケットは範囲にもコメントにも合わない。範囲は「移動局のみ」を付けると速度ありの局に限る。
+// 位置を持たないパケットはコメントには合わない。
 func isRFSelected(p *Packet, cfg Config) bool {
 	if cfg.IStoRFCalls != "" && noRF(cfg.IStoRFCalls, p.Src) {
-		return true
-	}
-	if cfg.IStoRFAreaOn && p.HasPos && (!cfg.IStoRFMobileOnly || p.Speed > 0) &&
-		p.Lat >= cfg.IStoRFLatMin && p.Lat <= cfg.IStoRFLatMax &&
-		p.Lon >= cfg.IStoRFLonMin && p.Lon <= cfg.IStoRFLonMax {
 		return true
 	}
 	if cfg.IStoRFComments != "" && p.HasPos {

@@ -786,7 +786,7 @@ async function loadAbout() {
 }
 
 // ---------- 設定 ----------
-const numFields = ['lat', 'lon', 'phgPower', 'phgHeight', 'phgGain', 'phgDir', 'baud', 'txDelayMs', 'localHeardMin', 'maxIsToRfPerMin', 'digiAliasPerMin', 'isToRfLatMin', 'isToRfLatMax', 'isToRfLonMin', 'isToRfLonMax', 'beaconRfMin', 'beaconIsMin', 'stationExpireMin', 'trackPoints', 'trackGapMin', 'wxBaud', 'wxIsMin', 'wxRfMin', 'wxSdrDevice', 'wxSdrGain', 'wxSdrPpm', 'wxSdrId', 'wxRainMm'];
+const numFields = ['lat', 'lon', 'phgPower', 'phgHeight', 'phgGain', 'phgDir', 'baud', 'txDelayMs', 'localHeardMin', 'maxIsToRfPerMin', 'digiAliasPerMin', 'beaconRfMin', 'beaconIsMin', 'stationExpireMin', 'trackPoints', 'trackGapMin', 'wxBaud', 'wxIsMin', 'wxRfMin', 'wxSdrDevice', 'wxSdrGain', 'wxSdrPpm', 'wxSdrId', 'wxRainMm'];
 function fillForm() {
   const f = $('#cfg-form');
   for (const el of f.elements) {
