@@ -118,6 +118,43 @@ func aliasHop(h string, aliases []string) (name string, remain int, ok bool) {
 	return "", 0, false
 }
 
+// splitComments はコメント絞り込みの設定文字列を分割する (カンマ・読点・改行区切り)。
+func splitComments(s string) []string {
+	var out []string
+	for _, c := range strings.FieldsFunc(s, func(r rune) bool { return r == ',' || r == '、' || r == '\n' }) {
+		if c = strings.TrimSpace(c); c != "" {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+// digiSelected は中継対象の絞り込み設定に合うかを返す。
+// 絞り込み (局指定・緯度経度の範囲・コメント) が 1 つも設定されていなければ常に true。
+// 設定されている場合は、どれか 1 つでも合えば true (OR)。位置を持たないパケットは範囲にもコメントにも合わない。
+func digiSelected(p *Packet, cfg Config) bool {
+	if cfg.DigiOnlyCalls == "" && !cfg.DigiAreaOn && cfg.DigiOnlyComments == "" {
+		return true
+	}
+	if cfg.DigiOnlyCalls != "" && noRF(cfg.DigiOnlyCalls, p.Src) {
+		return true
+	}
+	if cfg.DigiAreaOn && p.HasPos &&
+		p.Lat >= cfg.DigiLatMin && p.Lat <= cfg.DigiLatMax &&
+		p.Lon >= cfg.DigiLonMin && p.Lon <= cfg.DigiLonMax {
+		return true
+	}
+	if cfg.DigiOnlyComments != "" && p.HasPos {
+		c := strings.ToUpper(p.Comment)
+		for _, w := range splitComments(cfg.DigiOnlyComments) {
+			if strings.Contains(c, strings.ToUpper(w)) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // digipeat は RF で受信したパケットを、条件に合えば中継する。
 func (a *App) digipeat(p *Packet, cfg Config) {
 	if !cfg.DigiEnabled || cfg.Callsign == "" {
@@ -125,6 +162,9 @@ func (a *App) digipeat(p *Packet, cfg Config) {
 	}
 	_, tnc := a.clients()
 	if tnc == nil || !tnc.Status().Connected {
+		return
+	}
+	if !digiSelected(p, cfg) {
 		return
 	}
 	aliases := splitAliases(cfg.DigiAliases)

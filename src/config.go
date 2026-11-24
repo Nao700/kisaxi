@@ -51,8 +51,15 @@ type Config struct {
 	DigiEnabled bool `json:"digiEnabled"` // デジピータ (WIDE1-1・自局コール宛を中継)
 	DigiWide    bool `json:"digiWide"`    // WIDE2-n も中継する
 
-	DigiAliases     string `json:"digiAliases"`     // 地域エイリアス (カンマ区切り。例: KN,NS,AC)。KNn-N 形式を中継する。空欄で無効
-	DigiAliasPerMin int    `json:"digiAliasPerMin"` // 地域エイリアス中継の上限 (件/分)
+	DigiAliases      string  `json:"digiAliases"`   // 地域エイリアス (カンマ区切り。例: KN,NS,AC)。KNn-N 形式を中継する。空欄で無効
+	DigiOnlyCalls    string  `json:"digiOnlyCalls"` // 中継対象を局で絞る (JA1ABC は全 SSID、JA1ABC-9 は完全一致、JA1* は前方一致。カンマ区切り)
+	DigiAreaOn       bool    `json:"digiAreaOn"`    // 中継対象を緯度経度の範囲内の局で絞る
+	DigiLatMin       float64 `json:"digiLatMin"`
+	DigiLatMax       float64 `json:"digiLatMax"`
+	DigiLonMin       float64 `json:"digiLonMin"`
+	DigiLonMax       float64 `json:"digiLonMax"`
+	DigiOnlyComments string  `json:"digiOnlyComments"` // 中継対象をポジションのコメントで絞る (含む文字列。カンマ区切り、大小文字無視)
+	DigiAliasPerMin  int     `json:"digiAliasPerMin"`  // 地域エイリアス中継の上限 (件/分)
 
 	BeaconRF     bool   `json:"beaconRf"`
 	BeaconRFMin  int    `json:"beaconRfMin"`
@@ -251,6 +258,8 @@ func (c *Config) Normalize() {
 	c.WXTCPAddr = strings.TrimSpace(c.WXTCPAddr)
 	c.NoRFCalls = strings.ToUpper(strings.Join(strings.FieldsFunc(c.NoRFCalls, func(r rune) bool { return r == ',' || r == ' ' || r == '、' || r == '\n' }), ","))
 	c.DigiAliases = strings.ToUpper(strings.Join(strings.FieldsFunc(c.DigiAliases, func(r rune) bool { return r == ',' || r == ' ' || r == '、' || r == '\n' }), ","))
+	c.DigiOnlyCalls = strings.ToUpper(strings.Join(strings.FieldsFunc(c.DigiOnlyCalls, func(r rune) bool { return r == ',' || r == ' ' || r == '、' || r == '\n' }), ","))
+	c.DigiOnlyComments = strings.Join(splitComments(c.DigiOnlyComments), ",")
 	c.IStoRFPath = strings.ToUpper(strings.TrimSpace(c.IStoRFPath))
 	c.BeaconRFPath = strings.ToUpper(strings.TrimSpace(c.BeaconRFPath))
 }
@@ -295,6 +304,12 @@ func (c *Config) Validate() error {
 			if _, err := encodeAddr(d, false, false); err != nil {
 				return errors.New("パスの指定が正しくありません: " + d)
 			}
+		}
+	}
+	if c.DigiAreaOn {
+		if c.DigiLatMin < -90 || c.DigiLatMax > 90 || c.DigiLonMin < -180 || c.DigiLonMax > 180 ||
+			c.DigiLatMin > c.DigiLatMax || c.DigiLonMin > c.DigiLonMax {
+			return errors.New("中継対象の緯度経度の範囲が正しくありません (南 ≤ 北、西 ≤ 東)")
 		}
 	}
 	for _, al := range splitAliases(c.DigiAliases) {

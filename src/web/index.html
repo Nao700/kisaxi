@@ -306,6 +306,16 @@
           <label>地域エイリアス (空欄で無効) <input name="digiAliases" placeholder="例: KN (神奈川), NS (長崎), AC (愛知)"></label>
           <label>地域エイリアス中継の上限 (件/分) <input name="digiAliasPerMin" type="number" min="1"></label>
           <p class="hint">地域エイリアスを登録すると、KN3-3 や KN1-1 のような地域限定パスを中継します (自局コールを残して残りホップを 1 減らします。TRACE3-3 のようなトレース形式も TRACE を登録すれば中継できます)。カンマ区切り、英字のみ。既存の中継局と範囲が重ならないか確認してから設定してください。</p>
+          <label>中継対象の局 (空欄で全局) <input name="digiOnlyCalls" placeholder="例: JA1ABC, JA2XYZ-9, JA3*"></label>
+          <label class="chk"><input type="checkbox" name="digiAreaOn"> 緯度経度の範囲内の局だけ中継する</label>
+          <div class="row">
+            <label>南 (緯度) <input name="digiLatMin" type="number" step="any"></label>
+            <label>北 (緯度) <input name="digiLatMax" type="number" step="any"></label>
+            <label>西 (経度) <input name="digiLonMin" type="number" step="any"></label>
+            <label>東 (経度) <input name="digiLonMax" type="number" step="any"></label>
+          </div>
+          <label>中継対象のコメント (空欄で絞らない) <input name="digiOnlyComments" placeholder="例: Yokohama, KNn-N"></label>
+          <p class="hint">中継する局を絞り込めます。局指定・範囲・コメントのうち設定したもののどれか 1 つでも合うパケットだけを中継します (WIDE1-1・WIDE2-n・地域エイリアス共通)。コメントはポジションに含まれる文字列で、大小文字は区別しません。位置を持たないパケットは範囲・コメントには合いません。すべて空欄なら絞り込みません。</p>
           <p class="hint">WIDE1-1 の中継 (フィルインデジ) で、モービル機やハンディ機に自局パケットの中継が返り、電測に使えます。WIDE2-n の中継は送信が増えるため、高所設置の局などで地域の運用ルールを確認してから有効にしてください。TNC 接続時のみ動作します。</p>
         </fieldset>
 
