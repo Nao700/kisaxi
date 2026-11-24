@@ -54,6 +54,7 @@ type Config struct {
 	DigiAliases      string `json:"digiAliases"`      // UIflood のエイリアス (例: KN,NS,AC)。KNn-N を自局コールを入れず残りホップだけ減らして中継する。空欄で無効
 	DigiTraceAliases string `json:"digiTraceAliases"` // UItrace のエイリアス (例: TRACE)。TRACEn-N を自局コールを残して中継する。空欄で無効
 	IStoRFCalls      string `json:"isToRfCalls"`      // IS→RF 送出する位置情報を局で絞る (JA1ABC は全 SSID、JA1ABC-9 は完全一致、JA1* は前方一致。カンマ区切り)
+	IStoRFComments   string `json:"isToRfComments"`   // ポジションのコメントに含まれる文字列で送出する (含む文字列。カンマ区切り、大小文字無視)
 	DigiAliasPerMin  int    `json:"digiAliasPerMin"`  // UIflood/UItrace 中継の上限 (件/分)
 
 	BeaconRF     bool   `json:"beaconRf"`
@@ -255,6 +256,7 @@ func (c *Config) Normalize() {
 	c.DigiTraceAliases = strings.ToUpper(strings.Join(splitAliases(c.DigiTraceAliases), ","))
 	c.DigiAliases = strings.ToUpper(strings.Join(strings.FieldsFunc(c.DigiAliases, func(r rune) bool { return r == ',' || r == ' ' || r == '、' || r == '\n' }), ","))
 	c.IStoRFCalls = strings.ToUpper(strings.Join(strings.FieldsFunc(c.IStoRFCalls, func(r rune) bool { return r == ',' || r == ' ' || r == '、' || r == '\n' }), ","))
+	c.IStoRFComments = strings.Join(splitComments(c.IStoRFComments), ",")
 	c.IStoRFPath = strings.ToUpper(strings.TrimSpace(c.IStoRFPath))
 	c.BeaconRFPath = strings.ToUpper(strings.TrimSpace(c.BeaconRFPath))
 }
