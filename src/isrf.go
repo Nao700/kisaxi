@@ -1,6 +1,6 @@
 package main
 
-// APRS-IS → RF の送出条件 (局指定・ポジションのコメント)
+// APRS-IS → RF の送出条件 (局指定・ポジションコメント)
 
 import (
 	"log"
