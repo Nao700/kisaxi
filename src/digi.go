@@ -127,17 +127,6 @@ func aliasHop(h string, aliases []string) (name string, remain int, ok bool) {
 	return "", 0, false
 }
 
-// splitComments はコメント絞り込みの設定文字列を分割する (カンマ・読点・改行区切り)。
-func splitComments(s string) []string {
-	var out []string
-	for _, c := range strings.FieldsFunc(s, func(r rune) bool { return r == ',' || r == '、' || r == '\n' }) {
-		if c = strings.TrimSpace(c); c != "" {
-			out = append(out, c)
-		}
-	}
-	return out
-}
-
 // digipeat は RF で受信したパケットを、条件に合えば中継する。
 func (a *App) digipeat(p *Packet, cfg Config) {
 	if !cfg.DigiEnabled || cfg.Callsign == "" {

@@ -1,28 +1,18 @@
 package main
 
-// APRS-IS → RF の送出条件 (局指定・ポジションのコメント)
+// APRS-IS → RF の送出条件 (コールサイン名指し)
 
 import (
 	"log"
-	"strings"
 	"time"
 )
 
 // isRFSelected は APRS-IS から受けたパケットを RF へ送出する条件に合うかを返す。
-// 局指定・コメントのうち、設定したもののどれか 1 つでも合えば true (OR)。
+// 指定した局 (コールサイン名指し) のパケットなら true。
 // 何も設定されていなければ false (位置情報は送出しない)。
-// 位置を持たないパケットはコメントには合わない。
 func isRFSelected(p *Packet, cfg Config) bool {
 	if cfg.IStoRFCalls != "" && noRF(cfg.IStoRFCalls, p.Src) {
 		return true
-	}
-	if cfg.IStoRFComments != "" && p.HasPos {
-		c := strings.ToUpper(p.Comment)
-		for _, w := range splitComments(cfg.IStoRFComments) {
-			if strings.Contains(c, strings.ToUpper(w)) {
-				return true
-			}
-		}
 	}
 	return false
 }

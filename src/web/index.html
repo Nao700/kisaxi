@@ -296,8 +296,7 @@
           </div>
           <label>IS→RF 送信パス <input name="isToRfPath" placeholder="WIDE1-1 (空欄で直接)"></label>
           <label>送出する局 (コールサイン名指し) <input name="isToRfCalls" placeholder="例: JA1ABC, JA2XYZ-9, JA3*"></label>
-          <label>送出するポジションのコメント <input name="isToRfComments" placeholder="例: Yokohama, KNn-N"></label>
-          <p class="hint">APRS-IS で受けた位置情報を、RF へサードパーティ形式で送出する条件です。局指定・コメントのうち、設定したもののどちらかに合う局だけを送出します。すべて空欄なら位置情報は送出しません (従来のローカル局宛メッセージのゲートだけ動きます)。すでに RF で聞こえている局は送りません。「IS→RF 最大 (件/分)」の上限と送信パスを共用します。コメントは含まれる文字列で、大小文字は区別しません。</p>
+          <p class="hint">APRS-IS で受けた位置情報を、RF へサードパーティ形式で送出する条件です。指定した局 (コールサイン) の位置情報だけを送出します。空欄なら位置情報は送出しません (従来のローカル局宛メッセージのゲートだけ動きます)。すでに RF で聞こえている局は送りません。「IS→RF 最大 (件/分)」の上限と送信パスを共用します。</p>
           <label>除外局 (完全無視) <input name="noRfCalls" placeholder="例: JA1ABC, JA2XYZ-9, JA3*"></label>
           <p class="hint">ここに書いた局は完全に無視します。RF・APRS-IS どちらの受信もなかったことにし (一覧・地図・メッセージ・DX・IS への転送・デジピートの対象外)、その局宛のメッセージも送りません。カンマ区切り。JA1ABC は全 SSID、JA1ABC-9 はその SSID のみ、JA3* は前方一致。</p>
         </fieldset>
