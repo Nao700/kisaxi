@@ -59,6 +59,18 @@ func main() {
 
 	fmt.Printf("%s %s  (設定: %s)\n", softwareName, softwareVersion, path)
 
+	// 先に Web UI の待ち受けを確保する。更新後の再起動 (-after-update) では、古いプロセスが
+	// 終わるまでここで待つ。古いプロセスはシリアルポート (TNC) も持っているので、
+	// 待ち受けが取れた時点で TNC のポートも空いており、「Serial port busy」にならない。
+	ln, err := net.Listen("tcp", cfg.HTTPListen)
+	for i := 0; err != nil && *afterUpdate && i < 40; i++ {
+		time.Sleep(500 * time.Millisecond)
+		ln, err = net.Listen("tcp", cfg.HTTPListen)
+	}
+	if err != nil {
+		log.Fatalf("Web UI を %s で開始できません: %v", cfg.HTTPListen, err)
+	}
+
 	app := NewApp(cfg, path, logDir)
 	app.LoadData()
 	app.LoadWX()
@@ -66,14 +78,6 @@ func main() {
 	go app.Loop()
 
 	static, _ := fs.Sub(webFiles, "web")
-	ln, err := net.Listen("tcp", cfg.HTTPListen)
-	for i := 0; err != nil && *afterUpdate && i < 20; i++ {
-		time.Sleep(500 * time.Millisecond)
-		ln, err = net.Listen("tcp", cfg.HTTPListen)
-	}
-	if err != nil {
-		log.Fatalf("Web UI を %s で開始できません: %v", cfg.HTTPListen, err)
-	}
 	host := cfg.HTTPListen
 	if strings.HasPrefix(host, "0.0.0.0:") || strings.HasPrefix(host, ":") {
 		host = "127.0.0.1:" + host[strings.LastIndexByte(host, ':')+1:]
