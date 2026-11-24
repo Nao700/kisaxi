@@ -333,7 +333,7 @@ func (a *App) ApplyUpdate(ctx context.Context) error {
 // systemd 配下 (INVOCATION_ID あり) では、サービス側の Restart= に任せて終了だけする。
 func restartSelf(exe string) {
 	if os.Getenv("INVOCATION_ID") == "" {
-		args := append([]string{"-after-update", "-nobrowser"}, os.Args[1:]...)
+		args := restartArgs(os.Args[1:])
 		cmd := exec.Command(exe, args...)
 		cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 		detach(cmd)
@@ -343,6 +343,20 @@ func restartSelf(exe string) {
 		}
 	}
 	os.Exit(0)
+}
+
+// restartArgs は再起動用の引数を作る。-after-update と -nobrowser を先頭に付け、
+// 前回の再起動で付いた同じ指定は取り除く (再起動のたびに増えないように)。
+func restartArgs(orig []string) []string {
+	args := []string{"-after-update", "-nobrowser"}
+	for _, x := range orig {
+		switch strings.TrimLeft(x, "-") {
+		case "after-update", "nobrowser", "after-update=true", "nobrowser=true":
+			continue
+		}
+		args = append(args, x)
+	}
+	return args
 }
 
 // tickUpdate は設定で有効なとき、起動 30 秒後とその後 24 時間ごとに更新を確認する。
