@@ -12,6 +12,8 @@ func TestDigiSelected(t *testing.T) {
 		want bool
 	}{
 		{"条件なしは送出しない", Config{}, pos, false},
+		{"ポジションコメント Mic-E の In Service", Config{IStoRFComments: "in service"}, &Packet{Src: "JA9ZZZ", HasPos: true, MicEMsg: "In Service"}, true},
+		{"ポジションコメント Mic-E 別の状態は外れ", Config{IStoRFComments: "In Service"}, &Packet{Src: "JA9ZZZ", HasPos: true, MicEMsg: "Off Duty"}, false},
 		{"局指定 一致", Config{IStoRFCalls: "JA1ABC"}, pos, true},
 		{"局指定 SSID 完全一致 外れ", Config{IStoRFCalls: "JA1ABC-7"}, pos, false},
 		{"局指定 前方一致", Config{IStoRFCalls: "JA1*"}, nopos, true},

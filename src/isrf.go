@@ -17,7 +17,7 @@ func isRFSelected(p *Packet, cfg Config) bool {
 		return true
 	}
 	if cfg.IStoRFComments != "" && p.HasPos {
-		c := strings.ToUpper(p.Comment)
+		c := strings.ToUpper(p.Comment + " " + p.MicEMsg) // Mic-E のメッセージ (In Service など) はコメントではなく別欄に入る
 		for _, w := range splitComments(cfg.IStoRFComments) {
 			if strings.Contains(c, strings.ToUpper(w)) {
 				return true
