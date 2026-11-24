@@ -8,6 +8,7 @@ Windows 10/11（互換モード不要）と Linux（x64 / arm64 / armv7 / armv6�
 - 紹介ページ: https://nao700.github.io/kisaxi/
 - ダウンロード: [Releases の最新版](https://github.com/Nao700/kisaxi/releases/latest)（`KISAXI-windows-x64.exe`、`KISAXI-linux-x64`、`KISAXI-linux-arm64`、`KISAXI-linux-armv7`、`KISAXI-linux-armv6`、全部入りの `KISAXI-all-v*.zip`）
 - 開発の応援: KISAXI は無料で使えます。ドネーションは [GitHub Sponsors](https://github.com/sponsors/Nao700) から
+- APRSは双方向通信を原則としております。受信専用のI-GATE等の運用はお控えください。
 
 ## 機能
 
