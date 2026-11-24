@@ -308,6 +308,7 @@ func (a *App) onISLine(line string) {
 	a.handleMessage(p, "IS")
 	if cfg.IStoRF {
 		a.gateToRF(p, cfg)
+		a.gatePosToRF(p, cfg)
 	}
 }
 

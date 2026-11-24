@@ -15,7 +15,7 @@ import (
 //   - 次の未使用要素が自局コール → 自局* に置き換え
 //   - WIDE1-1                  → 自局* に置き換え (フィルインデジ)
 //   - WIDE2-2 / WIDE2-1 (wide) → 自局*,WIDE2-1 / 自局*,WIDE2* (ホップ数を 1 減らす)
-func digiPath(path []string, mycall string, wide bool, aliases []string) ([]string, bool) {
+func digiPath(path []string, mycall string, wide bool, flood, trace []string) ([]string, bool) {
 	next := 0
 	for i, d := range path {
 		if strings.HasSuffix(d, "*") {
@@ -53,19 +53,28 @@ func digiPath(path []string, mycall string, wide bool, aliases []string) ([]stri
 			return nil, false
 		}
 	default:
-		// 地域エイリアス (KNn-N) / UItrace 風 (TRACEn-N): 自局コールを残して残りホップを 1 減らす
-		name, n, ok := aliasHop(h, aliases)
-		if !ok {
-			return nil, false
+		// UItrace (TRACEn-N): 自局コールを残して残りホップを 1 減らす
+		if name, n, ok := aliasHop(h, trace); ok {
+			if n-1 > 0 {
+				mid = []string{mycall + "*", name + "-" + strconv.Itoa(n-1)}
+			} else {
+				mid = []string{mycall, name + "*"}
+			}
+			if len(used)+len(mid)+len(rest) > 8 {
+				return nil, false
+			}
+			break
 		}
-		if n-1 > 0 {
-			mid = []string{mycall + "*", name + "-" + strconv.Itoa(n-1)}
-		} else {
-			mid = []string{mycall, name + "*"}
+		// UIflood (KNn-N): 自局コールは入れず、残りホップだけ 1 減らす。最後のホップで使用済み印を付ける
+		if name, n, ok := aliasHop(h, flood); ok {
+			if n-1 > 0 {
+				mid = []string{name + "-" + strconv.Itoa(n-1)}
+			} else {
+				mid = []string{name + "*"}
+			}
+			break
 		}
-		if len(used)+len(mid)+len(rest) > 8 {
-			return nil, false
-		}
+		return nil, false
 	}
 	out := append(used, mid...)
 	return append(out, rest...), true
@@ -129,32 +138,6 @@ func splitComments(s string) []string {
 	return out
 }
 
-// digiSelected は中継対象の絞り込み設定に合うかを返す。
-// 絞り込み (局指定・緯度経度の範囲・コメント) が 1 つも設定されていなければ常に true。
-// 設定されている場合は、どれか 1 つでも合えば true (OR)。位置を持たないパケットは範囲にもコメントにも合わない。
-func digiSelected(p *Packet, cfg Config) bool {
-	if cfg.DigiOnlyCalls == "" && !cfg.DigiAreaOn && cfg.DigiOnlyComments == "" {
-		return true
-	}
-	if cfg.DigiOnlyCalls != "" && noRF(cfg.DigiOnlyCalls, p.Src) {
-		return true
-	}
-	if cfg.DigiAreaOn && p.HasPos &&
-		p.Lat >= cfg.DigiLatMin && p.Lat <= cfg.DigiLatMax &&
-		p.Lon >= cfg.DigiLonMin && p.Lon <= cfg.DigiLonMax {
-		return true
-	}
-	if cfg.DigiOnlyComments != "" && p.HasPos {
-		c := strings.ToUpper(p.Comment)
-		for _, w := range splitComments(cfg.DigiOnlyComments) {
-			if strings.Contains(c, strings.ToUpper(w)) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 // digipeat は RF で受信したパケットを、条件に合えば中継する。
 func (a *App) digipeat(p *Packet, cfg Config) {
 	if !cfg.DigiEnabled || cfg.Callsign == "" {
@@ -164,11 +147,8 @@ func (a *App) digipeat(p *Packet, cfg Config) {
 	if tnc == nil || !tnc.Status().Connected {
 		return
 	}
-	if !digiSelected(p, cfg) {
-		return
-	}
-	aliases := splitAliases(cfg.DigiAliases)
-	path, ok := digiPath(p.Path, cfg.Callsign, cfg.DigiWide, aliases)
+	flood, trace := splitAliases(cfg.DigiAliases), splitAliases(cfg.DigiTraceAliases)
+	path, ok := digiPath(p.Path, cfg.Callsign, cfg.DigiWide, flood, trace)
 	if !ok {
 		return
 	}
@@ -176,7 +156,7 @@ func (a *App) digipeat(p *Packet, cfg Config) {
 	if !a.dup.Check("digi|" + p.Src + ">" + p.Dst + "|" + p.Info) {
 		return
 	}
-	if isAliasRelay(p.Path, cfg.Callsign, aliases) && !a.digiAliasAllow(cfg) {
+	if isAliasRelay(p.Path, cfg.Callsign, append(append([]string{}, flood...), trace...)) && !a.digiAliasAllow(cfg) {
 		return
 	}
 	line := p.Src + ">" + p.Dst + "," + strings.Join(path, ",") + ":" + p.Info

@@ -289,12 +289,23 @@
         <fieldset>
           <legend>ゲート</legend>
           <label class="chk"><input type="checkbox" name="rfToIs"> RF → APRS-IS ゲート</label>
-          <label class="chk"><input type="checkbox" name="isToRf"> APRS-IS → RF ゲート (ローカル局宛メッセージ)</label>
+          <label class="chk"><input type="checkbox" name="isToRf"> APRS-IS → RF ゲート (ローカル局宛メッセージ・条件に合う局の位置情報)</label>
           <div class="row">
             <label>ローカル局とみなす時間 (分) <input name="localHeardMin" type="number" min="1"></label>
             <label>IS→RF 最大 (件/分) <input name="maxIsToRfPerMin" type="number" min="1"></label>
           </div>
           <label>IS→RF 送信パス <input name="isToRfPath" placeholder="WIDE1-1 (空欄で直接)"></label>
+          <label>送出する局 (コールサイン名指し) <input name="isToRfCalls" placeholder="例: JA1ABC, JA2XYZ-9, JA3*"></label>
+          <label class="chk"><input type="checkbox" name="isToRfAreaOn"> 緯度経度の範囲内の局を送出する</label>
+          <div class="row" style="flex-wrap:wrap">
+            <label style="min-width:5em">南 (緯度) <input name="isToRfLatMin" type="number" step="any"></label>
+            <label style="min-width:5em">北 (緯度) <input name="isToRfLatMax" type="number" step="any"></label>
+            <label style="min-width:5em">西 (経度) <input name="isToRfLonMin" type="number" step="any"></label>
+            <label style="min-width:5em">東 (経度) <input name="isToRfLonMax" type="number" step="any"></label>
+          </div>
+          <label class="chk"><input type="checkbox" name="isToRfMobileOnly"> 範囲は移動中 (速度あり) の局だけ</label>
+          <label>送出するポジションのコメント <input name="isToRfComments" placeholder="例: Yokohama, KNn-N"></label>
+          <p class="hint">APRS-IS で受けた位置情報を、RF へサードパーティ形式で送出する条件です。局指定・範囲・コメントのうち、設定したもののどれか 1 つでも合う局だけを送出します。すべて空欄なら位置情報は送出しません (従来のローカル局宛メッセージのゲートだけ動きます)。すでに RF で聞こえている局は送りません。「IS→RF 最大 (件/分)」の上限と送信パスを共用します。コメントは含まれる文字列で、大小文字は区別しません。</p>
           <label>除外局 (完全無視) <input name="noRfCalls" placeholder="例: JA1ABC, JA2XYZ-9, JA3*"></label>
           <p class="hint">ここに書いた局は完全に無視します。RF・APRS-IS どちらの受信もなかったことにし (一覧・地図・メッセージ・DX・IS への転送・デジピートの対象外)、その局宛のメッセージも送りません。カンマ区切り。JA1ABC は全 SSID、JA1ABC-9 はその SSID のみ、JA3* は前方一致。</p>
         </fieldset>
@@ -303,19 +314,10 @@
           <legend>デジピータ</legend>
           <label class="chk"><input type="checkbox" name="digiEnabled"> デジピータとして中継する (WIDE1-1・自局コール指定)</label>
           <label class="chk"><input type="checkbox" name="digiWide"> WIDE2-n も中継する (広域デジ)</label>
-          <label>地域エイリアス (空欄で無効) <input name="digiAliases" placeholder="例: KN (神奈川), NS (長崎), AC (愛知)"></label>
-          <label>地域エイリアス中継の上限 (件/分) <input name="digiAliasPerMin" type="number" min="1"></label>
-          <p class="hint">地域エイリアスを登録すると、KN3-3 や KN1-1 のような地域限定パスを中継します (自局コールを残して残りホップを 1 減らします。TRACE3-3 のようなトレース形式も TRACE を登録すれば中継できます)。カンマ区切り、英字のみ。既存の中継局と範囲が重ならないか確認してから設定してください。</p>
-          <label>中継対象の局 (空欄で全局) <input name="digiOnlyCalls" placeholder="例: JA1ABC, JA2XYZ-9, JA3*"></label>
-          <label class="chk"><input type="checkbox" name="digiAreaOn"> 緯度経度の範囲内の局だけ中継する</label>
-          <div class="row" style="flex-wrap:wrap">
-            <label style="min-width:5em">南 (緯度) <input name="digiLatMin" type="number" step="any"></label>
-            <label style="min-width:5em">北 (緯度) <input name="digiLatMax" type="number" step="any"></label>
-            <label style="min-width:5em">西 (経度) <input name="digiLonMin" type="number" step="any"></label>
-            <label style="min-width:5em">東 (経度) <input name="digiLonMax" type="number" step="any"></label>
-          </div>
-          <label>中継対象のコメント (空欄で絞らない) <input name="digiOnlyComments" placeholder="例: Yokohama, KNn-N"></label>
-          <p class="hint">中継する局を絞り込めます。局指定・範囲・コメントのうち設定したもののどれか 1 つでも合うパケットだけを中継します (WIDE1-1・WIDE2-n・地域エイリアス共通)。コメントはポジションに含まれる文字列で、大小文字は区別しません。位置を持たないパケットは範囲・コメントには合いません。すべて空欄なら絞り込みません。</p>
+          <label>UIflood のエイリアス (空欄で無効) <input name="digiAliases" placeholder="例: KN (神奈川), NS (長崎), AC (愛知)"></label>
+          <label>UItrace のエイリアス (空欄で無効) <input name="digiTraceAliases" placeholder="例: TRACE"></label>
+          <label>UIflood/UItrace 中継の上限 (件/分) <input name="digiAliasPerMin" type="number" min="1"></label>
+          <p class="hint">UIflood: KN3-3 のような地域限定パスを、自局コールを入れずに残りホップだけ 1 減らして中継します (KN3-3 → KN3-2 → … → KN3*)。UItrace: TRACE3-3 のようなパスを、自局コールを残しながら 1 減らして中継します (TRACE3-3 → 自局*,TRACE3-2)。どちらもカンマ区切り・英字のみで、n は 1〜7 です。既存の中継局と範囲が重ならないか確認してから設定してください。</p>
           <p class="hint">WIDE1-1 の中継 (フィルインデジ) で、モービル機やハンディ機に自局パケットの中継が返り、電測に使えます。WIDE2-n の中継は送信が増えるため、高所設置の局などで地域の運用ルールを確認してから有効にしてください。TNC 接続時のみ動作します。</p>
         </fieldset>
 
