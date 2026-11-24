@@ -52,9 +52,10 @@ type App struct {
 	dup    *dupCache
 	recent *ring
 
-	hmu       sync.Mutex
-	rfHeard   map[string]time.Time
-	rfGateLog []time.Time
+	hmu          sync.Mutex
+	rfHeard      map[string]time.Time
+	rfGateLog    []time.Time
+	digiAliasLog []time.Time
 
 	smu   sync.Mutex
 	stats Stats

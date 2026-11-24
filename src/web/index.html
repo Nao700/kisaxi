@@ -303,6 +303,9 @@
           <legend>デジピータ</legend>
           <label class="chk"><input type="checkbox" name="digiEnabled"> デジピータとして中継する (WIDE1-1・自局コール指定)</label>
           <label class="chk"><input type="checkbox" name="digiWide"> WIDE2-n も中継する (広域デジ)</label>
+          <label>地域エイリアス (空欄で無効) <input name="digiAliases" placeholder="例: KN (神奈川), NS (長崎), AC (愛知)"></label>
+          <label>地域エイリアス中継の上限 (件/分) <input name="digiAliasPerMin" type="number" min="1"></label>
+          <p class="hint">地域エイリアスを登録すると、KN3-3 や KN1-1 のような地域限定パスを中継します (自局コールを残して残りホップを 1 減らします。TRACE3-3 のようなトレース形式も TRACE を登録すれば中継できます)。カンマ区切り、英字のみ。既存の中継局と範囲が重ならないか確認してから設定してください。</p>
           <p class="hint">WIDE1-1 の中継 (フィルインデジ) で、モービル機やハンディ機に自局パケットの中継が返り、電測に使えます。WIDE2-n の中継は送信が増えるため、高所設置の局などで地域の運用ルールを確認してから有効にしてください。TNC 接続時のみ動作します。</p>
         </fieldset>
 
