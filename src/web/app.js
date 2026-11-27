@@ -313,7 +313,11 @@ function drawStation(call) {
   const segs = trackSegments(s.track || []);
   if ($('#opt-tracks').checked && segs.length) {
     if (e.track) e.track.setLatLngs(segs);
-    else e.track = L.polyline(segs, { color: s.lastRf ? '#0b7a3e' : '#3557b7', weight: 2, opacity: 0.7 }).addTo(trackLayer);
+    else {
+      e.track = L.polyline(segs, { color: s.lastRf ? '#0b7a3e' : '#3557b7', weight: 2, opacity: 0.7 }).addTo(trackLayer);
+      e.track.on('mousemove', ev => trackHover(call, ev.containerPoint));
+      e.track.on('mouseout', () => hoverRouteLayer.clearLayers());
+    }
   } else if (e.track) {
     trackLayer.removeLayer(e.track);
     e.track = null;
@@ -460,6 +464,31 @@ function hoverRoute(call, on) {
   if (!r || !$('#opt-gateroute').checked) return;
   // 位置は表示時点の最新で引き直す
   L.polyline(r.calls.map(c => c === '' ? [cfg.lat, cfg.lon] : stationLL(c)).filter(Boolean), { color: r.color, weight: 3, opacity: 0.85, dashArray: '10 8', interactive: false }).addTo(hoverRouteLayer);
+}
+// 軌跡にカーソルを合わせたとき、いちばん近いポイントを RF で受けたときの経路を表示する
+function trackHover(call, cp) {
+  const e = stations.get(call);
+  hoverRouteLayer.clearLayers();
+  if (!e || !$('#opt-gateroute').checked || !(cfg.lat || cfg.lon)) return;
+  const tr = e.s.track || [], tp = e.s.trackPath || [];
+  const off = tr.length - tp.length; // 旧データは経路が末尾に揃う
+  let best = -1, bd = 14; // px
+  tr.forEach((pt, i) => {
+    const d = map.latLngToContainerPoint([pt[0], pt[1]]).distanceTo(cp);
+    if (d < bd) { bd = d; best = i; }
+  });
+  if (best < 0) return;
+  const pt = tr[best], ll = [pt[0], pt[1]];
+  const dot = L.circleMarker(ll, { radius: 5, color: '#333', weight: 2, fillColor: '#fff', fillOpacity: 1, interactive: false });
+  const t = new Date(pt[2] * 1000).toLocaleString('ja-JP', { hour12: false });
+  dot.bindTooltip(t, { direction: 'top', offset: [0, -6] });
+  dot.addTo(hoverRouteLayer).openTooltip();
+  const path = best - off >= 0 ? tp[best - off] : '';
+  if (!path || !path.startsWith('RF')) return;
+  const line = [ll];
+  for (const h of path.split(',').slice(1)) if (h.endsWith('*')) { const x = stationLL(h.slice(0, -1)); if (x) line.push(x); }
+  line.push([cfg.lat, cfg.lon]);
+  L.polyline(line, { color: '#0aa5a5', weight: 3, opacity: 0.85, dashArray: '10 8', interactive: false }).addTo(hoverRouteLayer);
 }
 function showGateRoute(p) {
   if (p.dir !== 'GATE-IS' && p.dir !== 'GATE-RF') return;
