@@ -289,6 +289,8 @@ function drawStation(call) {
     e.marker.off('click', e.marker._openPopup, e.marker);
     e.marker.on('click', () => onMarkerClick(call));
     // 位置あいまいの範囲は、マーカーにカーソルを乗せている間 (とポップアップ表示中) だけ描く
+    e.marker.on('mouseover', () => hoverRoute(call, true));
+    e.marker.on('mouseout', () => hoverRoute(call, false));
     e.marker.on('mouseover', () => { const x = stations.get(call); if (x && x.ambig) ambigLayer.addLayer(x.ambig); });
     e.marker.on('mouseout', () => { const x = stations.get(call); if (x && x.ambig && !x.marker.isPopupOpen()) ambigLayer.removeLayer(x.ambig); });
     e.marker.on('popupclose', () => { const x = stations.get(call); if (x && x.ambig) ambigLayer.removeLayer(x.ambig); });
@@ -450,14 +452,23 @@ function stationLL(call) {
   const e = stations.get(call);
   return e && e.s.hasPos && !e.s.killed ? [e.s.lat, e.s.lon] : null;
 }
+const lastRoutes = new Map(); // 送信局 -> {pts, color, t} 直近のゲート経路 (カーソルを合わせたとき表示)
+const hoverRouteLayer = L.layerGroup().addTo(map);
+function hoverRoute(call, on) {
+  hoverRouteLayer.clearLayers();
+  const r = on && lastRoutes.get(call);
+  if (!r || !$('#opt-gateroute').checked) return;
+  // 位置は表示時点の最新で引き直す
+  L.polyline(r.calls.map(c => c === '' ? [cfg.lat, cfg.lon] : stationLL(c)).filter(Boolean), { color: r.color, weight: 3, opacity: 0.85, dashArray: '10 8', interactive: false }).addTo(hoverRouteLayer);
+}
 function showGateRoute(p) {
-  if (!$('#opt-gateroute').checked || (p.dir !== 'GATE-IS' && p.dir !== 'GATE-RF')) return;
+  if (p.dir !== 'GATE-IS' && p.dir !== 'GATE-RF') return;
   if (!cfg || !(cfg.lat || cfg.lon)) return;
   const me = [cfg.lat, cfg.lon];
   const isRF = p.dir === 'GATE-RF'; // IS→RF は元の送信局が "}" の後ろ
   let hdr = p.raw.slice(0, p.raw.indexOf(':'));
   let src;
-  const pts = [];
+  const pts = [], via = [];
   if (isRF) {
     const m = /:\}([^>:]+)>/.exec(p.raw);
     src = m && m[1];
@@ -466,11 +477,13 @@ function showGateRoute(p) {
     src = hops[0].split('>')[0];
     for (const h of hops.slice(1)) {
       if (/^q[A-Z]{2}$/.test(h)) break;
-      if (h.endsWith('*')) { const ll = stationLL(h.slice(0, -1)); if (ll) pts.push(ll); }
+      if (h.endsWith('*')) { const ll = stationLL(h.slice(0, -1)); if (ll) { pts.push(ll); via.push(h.slice(0, -1)); } }
     }
   }
   const sll = src && stationLL(src);
   if (!sll) return;
+  lastRoutes.set(src, { calls: [src, ...via, ''], color: isRF ? '#e8750a' : '#0aa5a5' });
+  if (!$('#opt-gateroute').checked) return;
   const line = [sll, ...pts, me];
   const color = isRF ? '#e8750a' : '#0aa5a5';
   while (routeLayer.getLayers().length >= ROUTE_MAX) routeLayer.removeLayer(routeLayer.getLayers()[0]);
@@ -479,7 +492,7 @@ function showGateRoute(p) {
   routeLayer.addLayer(pl).addLayer(dot);
   setTimeout(() => { routeLayer.removeLayer(pl); routeLayer.removeLayer(dot); }, ROUTE_MS);
 }
-$('#opt-gateroute').addEventListener('change', () => { if (!$('#opt-gateroute').checked) routeLayer.clearLayers(); });
+$('#opt-gateroute').addEventListener('change', () => { if (!$('#opt-gateroute').checked) { routeLayer.clearLayers(); hoverRouteLayer.clearLayers(); } });
 
 function addPacket(p) {
   if ($('#pkt-pause').checked) return;
