@@ -87,6 +87,7 @@ L.control.scale({ imperial: false }).addTo(map);
 const trackLayer = L.layerGroup().addTo(map);
 const ambigLayer = L.layerGroup().addTo(map);
 const rangeLayer = L.layerGroup().addTo(map);
+const routeLayer = L.layerGroup().addTo(map);
 const markerLayer = L.layerGroup().addTo(map);
 // 位置曖昧さレベル 1〜4 の範囲の一辺 (度): 0.1分 / 1分 / 10分 / 1度
 const AMBIG_DEG = [0, 0.1 / 60, 1 / 60, 10 / 60, 1];
@@ -442,6 +443,44 @@ function pktCategory(dir) {
   if (dir.startsWith('GATE')) return 'GATE';
   return dir;
 }
+// ---------- ゲート経路 (ゲートしたパケットの経路を地図上に一瞬線で表示) ----------
+const ROUTE_MS = 6000;
+const ROUTE_MAX = 40;
+function stationLL(call) {
+  const e = stations.get(call);
+  return e && e.s.hasPos && !e.s.killed ? [e.s.lat, e.s.lon] : null;
+}
+function showGateRoute(p) {
+  if (!$('#opt-gateroute').checked || (p.dir !== 'GATE-IS' && p.dir !== 'GATE-RF')) return;
+  if (!cfg || !(cfg.lat || cfg.lon)) return;
+  const me = [cfg.lat, cfg.lon];
+  const isRF = p.dir === 'GATE-RF'; // IS→RF は元の送信局が "}" の後ろ
+  let hdr = p.raw.slice(0, p.raw.indexOf(':'));
+  let src;
+  const pts = [];
+  if (isRF) {
+    const m = /:\}([^>:]+)>/.exec(p.raw);
+    src = m && m[1];
+  } else {
+    const hops = hdr.split(',');
+    src = hops[0].split('>')[0];
+    for (const h of hops.slice(1)) {
+      if (/^q[A-Z]{2}$/.test(h)) break;
+      if (h.endsWith('*')) { const ll = stationLL(h.slice(0, -1)); if (ll) pts.push(ll); }
+    }
+  }
+  const sll = src && stationLL(src);
+  if (!sll) return;
+  const line = [sll, ...pts, me];
+  const color = isRF ? '#e8750a' : '#0aa5a5';
+  while (routeLayer.getLayers().length >= ROUTE_MAX) routeLayer.removeLayer(routeLayer.getLayers()[0]);
+  const pl = L.polyline(line, { color, weight: 3, opacity: 0.9, className: 'gate-route', interactive: false });
+  const dot = L.circleMarker(sll, { radius: 6, color, weight: 2, fillOpacity: 0, className: 'gate-route-dot', interactive: false });
+  routeLayer.addLayer(pl).addLayer(dot);
+  setTimeout(() => { routeLayer.removeLayer(pl); routeLayer.removeLayer(dot); }, ROUTE_MS);
+}
+$('#opt-gateroute').addEventListener('change', () => { if (!$('#opt-gateroute').checked) routeLayer.clearLayers(); });
+
 function addPacket(p) {
   if ($('#pkt-pause').checked) return;
   const cats = new Set($$('.pf').filter(c => c.checked).map(c => c.value));
@@ -1266,7 +1305,7 @@ function connectEvents() {
     switch (m.type) {
       case 'station': upsertStation(m.data); break;
       case 'remove': removeStation(m.data); break;
-      case 'packet': addPacket(m.data); break;
+      case 'packet': showGateRoute(m.data); addPacket(m.data); break;
       case 'message': upsertMessage(m.data); break;
       case 'status': status = m.data; renderStatus(); if (wxActive()) renderWXState(); break;
       case 'wx': if (wxSnap) { wxSnap.cur = m.data.cur; wxSnap.curT = m.data.t; if (wxActive()) { renderWXCur(); renderWXState(); } } break;

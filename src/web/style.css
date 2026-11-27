@@ -337,3 +337,9 @@ body.nolabels .stn-icon .label { display: none; }
 .wxp-tx { font-size: 12px; display: flex; flex-direction: column; gap: 3px; }
 .wxp-tx .raw { font-family: Consolas, monospace; font-size: 11px; word-break: break-all; color: var(--muted); }
 .wxp .actions { position: static; }
+
+/* ゲート経路: 線は流れながら消える */
+@keyframes gate-route-fade { 0% { opacity: 1; } 70% { opacity: .8; } 100% { opacity: 0; } }
+@keyframes gate-route-dot { 0% { opacity: 1; stroke-width: 2; } 100% { opacity: 0; stroke-width: 8; } }
+.gate-route { stroke-dasharray: 10 8; animation: gate-route-fade 6s ease-out forwards; }
+.gate-route-dot { animation: gate-route-dot 1.5s ease-out forwards; }
