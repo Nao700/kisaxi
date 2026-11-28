@@ -4,7 +4,7 @@ package main
 
 const (
 	softwareName    = "KISAXI"
-	softwareVersion = "1.1.0"
+	softwareVersion = "1.1.1"
 	developedBy     = "Developed by JR2TTA Nao feat.Claude"
 )
 
@@ -15,6 +15,13 @@ type ChangeEntry struct {
 }
 
 var changelog = []ChangeEntry{
+	{
+		Version: "1.1.1",
+		Date:    "2026-11-28",
+		Changes: []string{
+			"アプリ内の更新後の再起動で、Bluetooth (rfcomm) の TNC が繋がらないままになることがある問題を修正 (旧プロセスが接続を閉じてから新プロセスを起動し、TNC の再接続も早めに再試行)",
+		},
+	},
 	{
 		Version: "1.1.0",
 		Date:    "2026-11-28",

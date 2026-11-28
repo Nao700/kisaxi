@@ -94,8 +94,10 @@ func (t *TNC) open(ctx context.Context) (io.ReadWriteCloser, error) {
 }
 
 func (t *TNC) Run(ctx context.Context) {
+	fails := 0
 	for {
 		err := t.session(ctx)
+		wait := retryWait(&fails, t.Status().Connected)
 		t.setStatus(false, nil, errString(err))
 		if ctx.Err() != nil {
 			return
@@ -106,9 +108,23 @@ func (t *TNC) Run(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(10 * time.Second):
+		case <-time.After(wait):
 		}
 	}
+}
+
+// retryWait は再接続までの待ち時間。つながっていた直後や最初の数回の失敗は短く (2 秒) 、
+// 続けて失敗するときは 10 秒おきにする (更新直後など、ポートが空くまでの一時的な失敗をすぐ取り戻すため)。
+func retryWait(fails *int, wasConnected bool) time.Duration {
+	if wasConnected {
+		*fails = 0
+	} else {
+		*fails++
+	}
+	if *fails <= 5 {
+		return 2 * time.Second
+	}
+	return 10 * time.Second
 }
 
 func errString(err error) string {

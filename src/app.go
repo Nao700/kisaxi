@@ -110,26 +110,32 @@ func (a *App) clients() (*ISClient, *TNC) {
 	return a.is, a.tnc
 }
 
+// stopConnections は既存の接続を止め、シリアルポート等が閉じ終わるまで待つ (待たないと再オープンが "busy" になる)。
+// 呼び出し側が startMu を持っていること。
+func (a *App) stopConnections() {
+	a.mu.Lock()
+	old := a.cancel
+	a.cancel = nil
+	a.mu.Unlock()
+	if old == nil {
+		return
+	}
+	old()
+	done := make(chan struct{})
+	go func() { a.running.Wait(); close(done) }()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		log.Printf("前回の接続の終了待ちがタイムアウトしました")
+	}
+}
+
 // Start は設定に従って APRS-IS / TNC を起動する (再起動時は既存を停止)。
 func (a *App) Start() {
 	a.startMu.Lock()
 	defer a.startMu.Unlock()
 
-	// 既存の接続を止め、シリアルポート等が閉じ終わるまで待つ (待たないと再オープンが "busy" になる)
-	a.mu.Lock()
-	old := a.cancel
-	a.cancel = nil
-	a.mu.Unlock()
-	if old != nil {
-		old()
-		done := make(chan struct{})
-		go func() { a.running.Wait(); close(done) }()
-		select {
-		case <-done:
-		case <-time.After(5 * time.Second):
-			log.Printf("前回の接続の終了待ちがタイムアウトしました")
-		}
-	}
+	a.stopConnections()
 
 	a.mu.Lock()
 	ctx, cancel := context.WithCancel(context.Background())
