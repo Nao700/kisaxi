@@ -47,6 +47,7 @@
       <div class="toolbar small">
         <label><input type="checkbox" id="opt-labels" checked> ラベル</label>
         <label><input type="checkbox" id="opt-tracks" checked> 軌跡</label>
+        <label title="ゲートしたパケットの経路を、地図上に線で一瞬表示します"><input type="checkbox" id="opt-gateroute" checked> ゲート経路</label>
         <label><input type="checkbox" id="opt-mapfilter"> 地図にも適用</label>
         <span id="st-count"></span>
       </div>
@@ -284,6 +285,17 @@
           </div>
           <label class="tnc-tcp">アドレス:ポート <input name="kissTcpAddr" placeholder="127.0.0.1:8001"></label>
           <label>TXDELAY (ms, 0=TNC の設定のまま) <input name="txDelayMs" type="number" min="0" max="2550" step="10"></label>
+          <label>Persist (0〜255, 空欄=TNC の設定のまま) <input name="kissPersist" type="number" min="0" max="255" step="1" placeholder="例: 63"></label>
+          <label>SlotTime (ms, 空欄=TNC の設定のまま) <input name="kissSlotMs" type="number" min="0" max="2550" step="10" placeholder="例: 100"></label>
+          <label>TXTail (ms, 空欄=TNC の設定のまま) <input name="kissTxTailMs" type="number" min="0" max="2550" step="10" placeholder="例: 10"></label>
+          <label>Full Duplex
+            <select name="kissFullDup">
+              <option value="">TNC の設定のまま</option>
+              <option value="0">半二重 (OFF)</option>
+              <option value="1">全二重 (ON)</option>
+            </select>
+          </label>
+          <div class="hint">TXDELAY / Persist / SlotTime / TXTail / Full Duplex は、TNC に接続するたびに KISS コマンドで送ります。</div>
         </fieldset>
 
         <fieldset>
@@ -309,6 +321,8 @@
             <option value="Emergency">Emergency (緊急)</option>
           </select></label>
           <p class="hint">APRS-IS で受けた位置情報を、RF へサードパーティ形式で送出する条件です。局指定・ポジションコメントのうち、設定したもののどちらかに合う局だけを送出します。すべて空欄なら位置情報は送出しません (従来のローカル局宛メッセージのゲートだけ動きます)。すでに RF で聞こえている局は送りません。ポジションコメントは Mic-E の状態 (In Service・En Route など) で、選んだ状態の局だけに合います。「IS→RF 最大 (件/分)」の上限と送信パスを共用します。</p>
+          <label class="chk"><input type="checkbox" name="noDprs"> DPRS (D-STAR) 経由の局の受信を除外する</label>
+          <p class="hint">宛先 (APDPRS・APDG??・API???・APD5T? など D-STAR 機器・ゲートウェイのもの) で判定します。シンボルの「D」だけでは判定しないので、D-STAR 以外の局は除外されません。除外した局は下の「除外局」と同じく、一覧・地図・メッセージ・DX・IS への転送・デジピートの対象外になります。</p>
           <label>除外局 (完全無視) <input name="noRfCalls" placeholder="例: JA1ABC, JA2XYZ-9, JA3*"></label>
           <p class="hint">ここに書いた局は完全に無視します。RF・APRS-IS どちらの受信もなかったことにし (一覧・地図・メッセージ・DX・IS への転送・デジピートの対象外)、その局宛のメッセージも送りません。カンマ区切り。JA1ABC は全 SSID、JA1ABC-9 はその SSID のみ、JA3* は前方一致。</p>
         </fieldset>
@@ -394,6 +408,16 @@
             <label class="chk"><input type="checkbox" name="wxRf"> RF にも送信</label>
             <label>間隔 (分) <input name="wxRfMin" type="number" min="5"></label>
           </div>
+          <div class="row">
+            <label class="chk"><input type="checkbox" name="wxCwop"> CWOP に送信</label>
+            <label>間隔 (分) <input name="wxCwopMin" type="number" min="5"></label>
+          </div>
+          <div class="row">
+            <label>CWOP の ID <input name="wxCwopId" maxlength="9" placeholder="空欄で気象局のコールサイン-SSID"></label>
+            <label>パスコード <input name="wxCwopPass" placeholder="空欄で自動"></label>
+          </div>
+          <label>CWOP サーバー <input name="wxCwopServer" placeholder="cwop.aprs.net:14580"></label>
+          <p class="hint">CWOP (Citizen Weather Observer Program) へ気象データを送ります。ID は CWOP に登録した CW1234 形式の番号、またはアマチュア局のコールサイン-SSID (例 JA1XXX-13) です。パスコードは、CW1234 形式の ID なら不要、コールサインなら APRS-IS のパスコード (空欄なら自局のパスコード) を使います。送信間隔は 5 分以上です (10 分程度を推奨)。</p>
           <p class="hint">コンソールにつないだデータロガーから約 2 秒ごとに現在値を読み取り、自局とは別の SSID の気象局として位置付きの APRS WX パケットを送ります (RF の送信パスはビーコンと同じ)。TNC 用とは別のシリアルポートを指定してください。WeatherLink など他のソフトが同じロガーを使っていると読み取れません。気圧はコンソールが標高補正した海面気圧を、雨量は 0.01 インチ単位の雨量計の値を使います。1 時間・24 時間雨量と突風 (過去 5 分間の最大風速) は読み取った値から積算するため、起動直後は実際より少なくなります。</p>
         </fieldset>
 

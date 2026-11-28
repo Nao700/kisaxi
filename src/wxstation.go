@@ -98,6 +98,9 @@ type wxState struct {
 	lastSave time.Time
 	nextRF   time.Time
 	nextIS   time.Time
+	nextCWOP time.Time
+	cwopBusy bool
+	lastCWOP string // 直近の CWOP 送信結果 (表示用)
 	lastPkt  string
 	lastTx   int64
 	nextStn  time.Time // 地図上の局を次に更新する時刻
@@ -251,16 +254,18 @@ func (st *wxState) closeBucket(now time.Time) {
 
 // WXSnapshot は画面に渡す現在値・履歴・送信状況。
 type WXSnapshot struct {
-	Enabled bool         `json:"enabled"`
-	Call    string       `json:"call"`
-	Cur     *Weather     `json:"cur,omitempty"`
-	CurT    int64        `json:"curT,omitempty"`
-	History []WXPoint    `json:"history"`
-	Davis   *DavisStatus `json:"davis,omitempty"`
-	LastPkt string       `json:"lastPkt,omitempty"`
-	LastTx  int64        `json:"lastTx,omitempty"`
-	NextIS  int64        `json:"nextIs,omitempty"`
-	NextRF  int64        `json:"nextRf,omitempty"`
+	Enabled  bool         `json:"enabled"`
+	Call     string       `json:"call"`
+	Cur      *Weather     `json:"cur,omitempty"`
+	CurT     int64        `json:"curT,omitempty"`
+	History  []WXPoint    `json:"history"`
+	Davis    *DavisStatus `json:"davis,omitempty"`
+	LastPkt  string       `json:"lastPkt,omitempty"`
+	LastTx   int64        `json:"lastTx,omitempty"`
+	NextIS   int64        `json:"nextIs,omitempty"`
+	NextRF   int64        `json:"nextRf,omitempty"`
+	CWOP     string       `json:"cwop,omitempty"` // 直近の CWOP 送信結果
+	NextCWOP int64        `json:"nextCwop,omitempty"`
 }
 
 func (a *App) WX() WXSnapshot {
@@ -281,6 +286,12 @@ func (a *App) WX() WXSnapshot {
 	if cfg.WXEnabled && cfg.Callsign != "" {
 		if cfg.WXIS && !st.nextIS.IsZero() {
 			s.NextIS = st.nextIS.UnixMilli()
+		}
+		if cfg.WXCWOP {
+			s.CWOP = st.lastCWOP
+			if !st.nextCWOP.IsZero() {
+				s.NextCWOP = st.nextCWOP.UnixMilli()
+			}
 		}
 		if cfg.WXRF && !st.nextRF.IsZero() {
 			s.NextRF = st.nextRF.UnixMilli()
@@ -365,6 +376,8 @@ func (a *App) tickWX(now time.Time) {
 	updStn := !now.Before(st.nextStn)
 	st.mu.Unlock()
 
+	a.tickCWOP(cfg, now)
+
 	sent := false
 	if doRF || doIS {
 		sentRF, sentIS, err := a.sendWX(cfg, now, doRF, doIS)
@@ -399,10 +412,16 @@ func (a *App) WXSendNow() error {
 	if !cfg.WXEnabled {
 		return errors.New("ウェザーステーションが有効になっていません")
 	}
-	if !cfg.WXIS && !cfg.WXRF {
-		return errors.New("設定で APRS-IS か RF の送信を有効にしてください")
+	if !cfg.WXIS && !cfg.WXRF && !cfg.WXCWOP {
+		return errors.New("設定で APRS-IS・RF・CWOP のいずれかの送信を有効にしてください")
 	}
 	now := time.Now()
+	if cfg.WXCWOP {
+		a.sendCWOPNow(cfg, now)
+		if !cfg.WXIS && !cfg.WXRF {
+			return nil
+		}
+	}
 	sentRF, sentIS, err := a.sendWX(cfg, now, cfg.WXRF, cfg.WXIS)
 	if err != nil {
 		return err
@@ -507,4 +526,47 @@ func (a *App) LoadWX() {
 	if d.BaseT > 0 {
 		st.baseMm, st.baseT, st.baseSet = d.BaseMm, time.UnixMilli(d.BaseT), true
 	}
+}
+
+// tickCWOP は CWOP への送信間隔が来ていれば、別 goroutine で送信する (通信で定期処理を止めないため)。
+func (a *App) tickCWOP(cfg Config, now time.Time) {
+	if !cfg.WXCWOP {
+		return
+	}
+	st := &a.wx
+	st.mu.Lock()
+	due := !st.cwopBusy && !now.Before(st.nextCWOP)
+	st.mu.Unlock()
+	if due {
+		a.sendCWOPNow(cfg, now)
+	}
+}
+
+// sendCWOPNow は気象パケットを CWOP へ送る。データが無いときは何もしない。
+func (a *App) sendCWOPNow(cfg Config, now time.Time) {
+	body, ok := a.wxPacket(cfg, now)
+	if !ok {
+		return
+	}
+	id := cwopID(cfg)
+	line := cwopLine(id, body)
+	st := &a.wx
+	st.mu.Lock()
+	st.cwopBusy = true
+	st.nextCWOP = now.Add(time.Duration(cfg.WXCWOPMin) * time.Minute)
+	st.mu.Unlock()
+	go func() {
+		err := sendCWOP(cfg, id, line)
+		res := "CWOP 送信 " + time.Now().Format("15:04") + " 成功"
+		if err != nil {
+			res = "CWOP 送信失敗: " + err.Error()
+			a.emitPacket("TX", "# "+res)
+		} else {
+			a.emitPacket("TX-CWOP", line)
+		}
+		st.mu.Lock()
+		st.cwopBusy = false
+		st.lastCWOP = res
+		st.mu.Unlock()
+	}()
 }

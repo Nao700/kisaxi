@@ -173,6 +173,7 @@ func connChanged(o, n Config) bool {
 		o.ISEnabled != n.ISEnabled || o.ISServer != n.ISServer || o.ISServer2 != n.ISServer2 || o.ISServer3 != n.ISServer3 || o.ISFilter != n.ISFilter ||
 		o.TNCType != n.TNCType || o.SerialPort != n.SerialPort || o.Baud != n.Baud ||
 		o.KissTCPAddr != n.KissTCPAddr || o.BTAddr != n.BTAddr || o.BTBridgeAddr != n.BTBridgeAddr || o.TNCInit != n.TNCInit || o.TxDelayMs != n.TxDelayMs ||
+		o.KissPersist != n.KissPersist || o.KissSlotMs != n.KissSlotMs || o.KissTxTailMs != n.KissTxTailMs || o.KissFullDup != n.KissFullDup ||
 		o.WXEnabled != n.WXEnabled || o.WXSource != n.WXSource || o.WXSerialPort != n.WXSerialPort ||
 		o.WXBaud != n.WXBaud || o.WXTCPAddr != n.WXTCPAddr ||
 		o.WXSDRDevice != n.WXSDRDevice || o.WXSDRGain != n.WXSDRGain || o.WXSDRPPM != n.WXSDRPPM || o.WXSDRID != n.WXSDRID || o.WXRainMm != n.WXRainMm
@@ -257,11 +258,11 @@ func (a *App) handleRF(line string) {
 		return // 自局の送信がデジピートされて戻ってきたもの
 	}
 	if p.Type == "thirdparty" && len(p.Info) > 1 {
-		if ip, err := ParseTNC2(p.Info[1:]); err == nil && noRF(cfg.NoRFCalls, ip.Src) {
+		if ip, err := ParseTNC2(p.Info[1:]); err == nil && ignoredPacket(cfg, ip) {
 			return
 		}
 	}
-	if noRF(cfg.NoRFCalls, p.Src) {
+	if ignoredPacket(cfg, p) {
 		return // 除外局: 受信を完全に無視する
 	}
 	a.hmu.Lock()
@@ -301,7 +302,7 @@ func (a *App) onISLine(line string) {
 			p = ip
 		}
 	}
-	if isOwnCall(p.Src, cfg) || noRF(cfg.NoRFCalls, p.Src) {
+	if isOwnCall(p.Src, cfg) || ignoredPacket(cfg, p) {
 		return // 除外局: 受信を完全に無視する
 	}
 	a.updateStation(p, "IS")

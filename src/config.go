@@ -39,6 +39,11 @@ type Config struct {
 	BTBridgeAddr string `json:"btBridgeAddr"` // kiss-bt: ブリッジの HTTP アドレス (空=127.0.0.1:8074)
 	TNCInit      string `json:"tncInit"`      // KISS モード移行前に送るコマンド (改行区切り)
 	TxDelayMs    int    `json:"txDelayMs"`
+	// 以下の KISS パラメーターは -1 で「TNC の設定のまま (送らない)」
+	KissPersist  int `json:"kissPersist"`  // 0-255 (P)
+	KissSlotMs   int `json:"kissSlotMs"`   // SlotTime (ms, 10ms 単位)
+	KissTxTailMs int `json:"kissTxTailMs"` // TXTail (ms, 10ms 単位)
+	KissFullDup  int `json:"kissFullDup"`  // 0=半二重, 1=全二重
 
 	RFtoIS          bool   `json:"rfToIs"`
 	IStoRF          bool   `json:"isToRf"`
@@ -47,6 +52,8 @@ type Config struct {
 	MaxIStoRFPerMin int    `json:"maxIsToRfPerMin"`
 
 	NoRFCalls string `json:"noRfCalls"` // 除外局: 受信を無視し、RF へも送らない (カンマ区切り。JA1ABC は全 SSID、JA1ABC-9 は完全一致、JA1* は前方一致)
+
+	NoDPRS bool `json:"noDprs"` // DPRS (D-STAR) 由来の局の受信も除外局と同じく完全に無視する
 
 	DigiEnabled bool `json:"digiEnabled"` // デジピータ (WIDE1-1・自局コール宛を中継)
 	DigiWide    bool `json:"digiWide"`    // WIDE2-n も中継する
@@ -98,6 +105,12 @@ type Config struct {
 	WXISMin      int     `json:"wxIsMin"`
 	WXRF         bool    `json:"wxRf"`
 	WXRFMin      int     `json:"wxRfMin"`
+	// CWOP (Citizen Weather Observer Program) への気象データ送信
+	WXCWOP       bool   `json:"wxCwop"`
+	WXCWOPMin    int    `json:"wxCwopMin"`    // 送信間隔 (分、5 以上)
+	WXCWOPID     string `json:"wxCwopId"`     // CWOP の ID (空欄なら気象局のコールサイン-SSID)
+	WXCWOPPass   string `json:"wxCwopPass"`   // 空欄なら CW1234 形式の ID は -1、アマチュア局のコールは自局のパスコード
+	WXCWOPServer string `json:"wxCwopServer"` // 空欄で cwop.aprs.net:14580
 
 	Objects []ObjectDef `json:"objects"`
 }
@@ -123,6 +136,10 @@ func defaultConfig() Config {
 		TNCType:          "none",
 		Baud:             9600,
 		KissTCPAddr:      "127.0.0.1:8001",
+		KissPersist:      -1,
+		KissSlotMs:       -1,
+		KissTxTailMs:     -1,
+		KissFullDup:      -1,
 		RFtoIS:           true,
 		IStoRF:           true,
 		LocalHeardMin:    30,
@@ -148,6 +165,7 @@ func defaultConfig() Config {
 		WXISMin:          5,
 		WXRF:             false,
 		WXRFMin:          30,
+		WXCWOPMin:        cwopDefaultMin,
 		StationExpireMin: 60,
 		TrackPoints:      300,
 		TrackSplit:       "day",
@@ -246,6 +264,15 @@ func (c *Config) Normalize() {
 	if c.WXISMin < 5 {
 		c.WXISMin = 5
 	}
+	if c.WXCWOPMin == 0 {
+		c.WXCWOPMin = cwopDefaultMin
+	}
+	if c.WXCWOPMin < cwopMinMin {
+		c.WXCWOPMin = cwopMinMin
+	}
+	c.WXCWOPID = strings.ToUpper(strings.TrimSpace(c.WXCWOPID))
+	c.WXCWOPPass = strings.TrimSpace(c.WXCWOPPass)
+	c.WXCWOPServer = strings.TrimSpace(c.WXCWOPServer)
 	if c.WXRFMin < 5 {
 		c.WXRFMin = 5
 	}
@@ -289,6 +316,11 @@ func (c *Config) Validate() error {
 			return errors.New("気象局のコールサインは自局とは別の SSID にしてください (例: JA1XXX-13)")
 		}
 	}
+	if c.WXCWOPID != "" {
+		if _, err := encodeAddr(c.WXCWOPID, false, false); err != nil {
+			return errors.New("CWOP の ID が正しくありません (例: CW1234 または JA1XXX-13)")
+		}
+	}
 	for _, p := range []string{c.IStoRFPath, c.BeaconRFPath} {
 		if p == "" {
 			continue
@@ -318,6 +350,18 @@ func (c *Config) Validate() error {
 		if err := checkAlias(al); err != nil {
 			return err
 		}
+	}
+	if c.KissPersist < -1 || c.KissPersist > 255 {
+		return errors.New("Persist は 0〜255 で指定してください")
+	}
+	if c.KissSlotMs < -1 || c.KissSlotMs > 2550 {
+		return errors.New("SlotTime は 0〜2550 ms で指定してください")
+	}
+	if c.KissTxTailMs < -1 || c.KissTxTailMs > 2550 {
+		return errors.New("TXTail は 0〜2550 ms で指定してください")
+	}
+	if c.KissFullDup < -1 || c.KissFullDup > 1 {
+		return errors.New("Full Duplex の指定が正しくありません")
 	}
 	switch c.TNCType {
 	case "none", "kiss-serial", "kiss-tcp", "kiss-bt":

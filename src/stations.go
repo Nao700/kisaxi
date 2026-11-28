@@ -11,38 +11,42 @@ import (
 type TrackPoint [3]float64 // lat, lon, unix 秒
 
 type Station struct {
-	Call      string       `json:"call"`
-	HasPos    bool         `json:"hasPos"`
-	Lat       float64      `json:"lat"`
-	Lon       float64      `json:"lon"`
-	Ambig     int          `json:"ambig,omitempty"` // 位置曖昧さレベル 1〜4
-	Sym       string       `json:"sym"`
-	Comment   string       `json:"comment"`
-	Status    string       `json:"status"`
-	HasCS     bool         `json:"hasCs"`
-	Course    int          `json:"course"`
-	Speed     float64      `json:"speed"`
-	HasAlt    bool         `json:"hasAlt"`
-	Alt       float64      `json:"alt"`
-	WX        *Weather     `json:"wx,omitempty"`
-	WXTime    int64        `json:"wxTime,omitempty"` // 気象データの受信時刻 (ミリ秒)
-	MicE      string       `json:"micE"`
-	Via       string       `json:"via"` // RF / IS / LOCAL
-	Path      string       `json:"path"`
-	Raw       string       `json:"raw"`
-	Type      string       `json:"type"`
-	Object    bool         `json:"object"`
-	Owner     string       `json:"owner"`
-	Killed    bool         `json:"killed"`
-	Last      int64        `json:"last"`   // ミリ秒
-	LastRF    int64        `json:"lastRf"` // ミリ秒
-	Count     int          `json:"count"`
-	Track     []TrackPoint `json:"track,omitempty"`
+	Call    string       `json:"call"`
+	HasPos  bool         `json:"hasPos"`
+	Lat     float64      `json:"lat"`
+	Lon     float64      `json:"lon"`
+	Ambig   int          `json:"ambig,omitempty"` // 位置曖昧さレベル 1〜4
+	Sym     string       `json:"sym"`
+	Comment string       `json:"comment"`
+	Status  string       `json:"status"`
+	HasCS   bool         `json:"hasCs"`
+	Course  int          `json:"course"`
+	Speed   float64      `json:"speed"`
+	HasAlt  bool         `json:"hasAlt"`
+	Alt     float64      `json:"alt"`
+	WX      *Weather     `json:"wx,omitempty"`
+	WXTime  int64        `json:"wxTime,omitempty"` // 気象データの受信時刻 (ミリ秒)
+	MicE    string       `json:"micE"`
+	Via     string       `json:"via"` // RF / IS / LOCAL
+	Path    string       `json:"path"`
+	Raw     string       `json:"raw"`
+	Type    string       `json:"type"`
+	Object  bool         `json:"object"`
+	Owner   string       `json:"owner"`
+	Killed  bool         `json:"killed"`
+	Last    int64        `json:"last"`   // ミリ秒
+	LastRF  int64        `json:"lastRf"` // ミリ秒
+	Count   int          `json:"count"`
+	Track   []TrackPoint `json:"track,omitempty"`
+	// TrackPath は Track と同じ並びで、各ポイントを RF で受けたときの経路 ("RF" または "RF,JA1DIG*,WIDE2-1")。
+	// IS 受信や旧データは空文字。旧データでは Track より短いことがあり、その場合は末尾に揃える。
+	TrackPath []string `json:"trackPath,omitempty"`
 }
 
 func (s *Station) clone() *Station {
 	c := *s
 	c.Track = append([]TrackPoint(nil), s.Track...)
+	c.TrackPath = append([]string(nil), s.TrackPath...)
 	return &c
 }
 
@@ -82,12 +86,23 @@ func (db *StationDB) Update(p *Packet, via string, now time.Time, maxTrack int) 
 	}
 	if p.HasPos {
 		if s.HasPos && maxTrack > 0 && distanceKm(s.Lat, s.Lon, p.Lat, p.Lon) > 0.02 {
+			// 旧データ (経路なし) は先頭を空文字で埋めて Track と長さを揃える
+			for len(s.TrackPath) < len(s.Track) {
+				s.TrackPath = append([]string{""}, s.TrackPath...)
+			}
 			if len(s.Track) == 0 {
 				s.Track = append(s.Track, TrackPoint{s.Lat, s.Lon, float64(prevLast / 1000)})
+				s.TrackPath = append(s.TrackPath, "")
+			}
+			route := ""
+			if via == "RF" {
+				route = strings.Join(append([]string{"RF"}, p.Path...), ",")
 			}
 			s.Track = append(s.Track, TrackPoint{p.Lat, p.Lon, float64(now.Unix())})
+			s.TrackPath = append(s.TrackPath, route)
 			if len(s.Track) > maxTrack {
 				s.Track = s.Track[len(s.Track)-maxTrack:]
+				s.TrackPath = s.TrackPath[len(s.TrackPath)-maxTrack:]
 			}
 		}
 		s.HasPos = true
