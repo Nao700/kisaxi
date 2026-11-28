@@ -523,21 +523,53 @@ function showGateRoute(p) {
 }
 $('#opt-gateroute').addEventListener('change', () => { if (!$('#opt-gateroute').checked) { routeLayer.clearLayers(); hoverRouteLayer.clearLayers(); } });
 
-function addPacket(p) {
-  if ($('#pkt-pause').checked) return;
+// パケット欄は表示用のバッファを持ち、フィルタ (種別・検索語) を変えたら溜めた分も絞り直す。
+const PKT_MAX = 3000;
+const pktBuf = [];
+function pktMatch(p, cats, words) {
+  if (!cats.has(pktCategory(p.dir))) return false;
+  if (!words.length) return true;
+  const hay = (p.dir + ' ' + p.raw).toUpperCase();
+  return words.every(w => hay.includes(w)); // 空白区切りは AND
+}
+function pktFilterState() {
   const cats = new Set($$('.pf').filter(c => c.checked).map(c => c.value));
-  if (!cats.has(pktCategory(p.dir))) return;
-  const g = $('#pkt-grep').value.trim().toUpperCase();
-  if (g && !p.raw.toUpperCase().includes(g)) return;
-  const atBottom = pktLog.scrollHeight - pktLog.scrollTop - pktLog.clientHeight < 30;
+  const words = $('#pkt-grep').value.trim().toUpperCase().split(/\s+/).filter(Boolean);
+  return { cats, words };
+}
+function pktRow(p) {
   const div = document.createElement('div');
   div.className = 'dir-' + p.dir;
   div.innerHTML = `<span class="t">${hhmmss(p.t)}</span><span class="d">${esc(p.dir)}</span> ${esc(p.raw)}`;
-  pktLog.appendChild(div);
-  while (pktLog.childElementCount > 3000) pktLog.firstElementChild.remove();
-  if (atBottom) pktLog.scrollTop = pktLog.scrollHeight;
+  return div;
 }
-$('#pkt-clear').addEventListener('click', () => (pktLog.innerHTML = ''));
+function pktCount(words, shown) {
+  $('#pkt-count').textContent = words.length ? `${shown} / ${pktBuf.length} 件` : '';
+}
+function renderPackets() {
+  const { cats, words } = pktFilterState();
+  const frag = document.createDocumentFragment();
+  for (const p of pktBuf) if (pktMatch(p, cats, words)) frag.appendChild(pktRow(p));
+  pktLog.innerHTML = '';
+  pktLog.appendChild(frag);
+  pktLog.scrollTop = pktLog.scrollHeight;
+  pktCount(words, pktLog.childElementCount);
+}
+function addPacket(p) {
+  if ($('#pkt-pause').checked) return;
+  pktBuf.push(p);
+  if (pktBuf.length > PKT_MAX) pktBuf.shift();
+  const { cats, words } = pktFilterState();
+  if (!pktMatch(p, cats, words)) { pktCount(words, pktLog.childElementCount); return; }
+  const atBottom = pktLog.scrollHeight - pktLog.scrollTop - pktLog.clientHeight < 30;
+  pktLog.appendChild(pktRow(p));
+  while (pktLog.childElementCount > PKT_MAX) pktLog.firstElementChild.remove();
+  if (atBottom) pktLog.scrollTop = pktLog.scrollHeight;
+  pktCount(words, pktLog.childElementCount);
+}
+$('#pkt-clear').addEventListener('click', () => { pktBuf.length = 0; renderPackets(); });
+$('#pkt-grep').addEventListener('input', renderPackets);
+$$('.pf').forEach(c => c.addEventListener('change', renderPackets));
 
 // ---------- メッセージ ----------
 function renderMessages() {
