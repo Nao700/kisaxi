@@ -20,6 +20,7 @@ var changelog = []ChangeEntry{
 		Date:    "2026-11-28",
 		Changes: []string{
 			"アプリ内の更新後の再起動で、Bluetooth (rfcomm) の TNC が繋がらないままになることがある問題を修正 (旧プロセスが接続を閉じてから新プロセスを起動し、TNC の再接続も早めに再試行)",
+			"機種名の表示に使うデバイス ID (tocall) 情報を最新の aprs-deviceid に更新 (新規 40 件・Mic-E の追加・名称修正を含む)",
 		},
 	},
 	{
