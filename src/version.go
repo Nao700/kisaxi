@@ -4,7 +4,7 @@ package main
 
 const (
 	softwareName    = "KISAXI"
-	softwareVersion = "1.1.0"
+	softwareVersion = "1.1.1"
 	developedBy     = "Developed by JR2TTA Nao feat.Claude"
 )
 
@@ -16,6 +16,13 @@ type ChangeEntry struct {
 
 var changelog = []ChangeEntry{
 	{
+		Version: "1.1.1",
+		Date:    "2026-11-28",
+		Changes: []string{
+			"アプリ内の更新後の再起動で、Bluetooth (rfcomm) の TNC が繋がらないままになることがある問題を修正 (旧プロセスが接続を閉じてから新プロセスを起動し、TNC の再接続も早めに再試行)",
+		},
+	},
+	{
 		Version: "1.1.0",
 		Date:    "2026-11-28",
 		Changes: []string{
@@ -24,7 +31,6 @@ var changelog = []ChangeEntry{
 			"ゲートしたパケットの経路を地図上に線でリアルタイム表示 (局・軌跡にカーソルを合わせるとその経路を表示。地図上部のチェックボックスでオン/オフ)",
 			"気象局の設定から CWOP へ気象データを送信できるように (間隔・ID・パスコード・サーバーを設定)",
 			"DPRS (D-STAR) 経由の局の受信を除外する設定を追加 (宛先 APDPRS・APDG??・API??? などで判定し、シンボルのオーバーレイ D だけでは除外しない)",
-			"アプリ内の更新後の再起動で、Bluetooth (rfcomm) の TNC が繋がらないままになることがある問題を修正 (旧プロセスが接続を閉じてから新プロセスを起動し、TNC の再接続も早めに再試行)",
 		},
 	},
 	{
