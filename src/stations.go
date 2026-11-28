@@ -41,6 +41,10 @@ type Station struct {
 	// TrackPath は Track と同じ並びで、各ポイントを RF で受けたときの経路 ("RF" または "RF,JA1DIG*,WIDE2-1")。
 	// IS 受信や旧データは空文字。旧データでは Track より短いことがあり、その場合は末尾に揃える。
 	TrackPath []string `json:"trackPath,omitempty"`
+
+	// 位置の外れ値検査用 (保存しない)。急に遠くへ飛んだ位置を 1 回だけ保留する。
+	pendLat, pendLon float64
+	hasPend          bool
 }
 
 func (s *Station) clone() *Station {
@@ -83,6 +87,17 @@ func (db *StationDB) Update(p *Packet, via string, now time.Time, maxTrack int) 
 		s.Object = true
 		s.Owner = p.Src
 		s.Killed = p.Killed
+	}
+	if p.HasPos && s.HasPos && p.Name == "" && implausibleJump(s, p, now, prevLast) {
+		// 受信ミス (化けたパケット) の疑い。位置は採用せず、次のパケットが同じ場所なら本当の移動として採用する。
+		if s.hasPend && distanceKm(s.pendLat, s.pendLon, p.Lat, p.Lon) <= 5 {
+			s.hasPend = false
+		} else {
+			s.pendLat, s.pendLon, s.hasPend = p.Lat, p.Lon, true
+			return s.clone()
+		}
+	} else if p.HasPos {
+		s.hasPend = false
 	}
 	if p.HasPos {
 		if s.HasPos && maxTrack > 0 && distanceKm(s.Lat, s.Lon, p.Lat, p.Lon) > 0.02 {
@@ -143,6 +158,7 @@ func (db *StationDB) Load(list []*Station, maxAge time.Duration, now time.Time) 
 		if cur, ok := db.m[s.Call]; ok && cur.Last >= s.Last {
 			continue
 		}
+		s.Track, s.TrackPath = dropTrackSpikes(s.Track, s.TrackPath)
 		db.m[s.Call] = s
 		n++
 	}
@@ -182,4 +198,43 @@ func distanceKm(lat1, lon1, lat2, lon2 float64) float64 {
 	dlon := (lon2 - lon1) * rad
 	a := math.Sin(dlat/2)*math.Sin(dlat/2) + math.Cos(lat1*rad)*math.Cos(lat2*rad)*math.Sin(dlon/2)*math.Sin(dlon/2)
 	return 2 * r * math.Asin(math.Min(1, math.Sqrt(a)))
+}
+
+// implausibleJump は、前回の位置から現実的でない速さ・距離で飛んだ位置かを返す。
+// 300km 以上離れ、かつ平均 1000km/h を超える移動を外れ値とみなす (航空機は超えない想定)。
+func implausibleJump(s *Station, p *Packet, now time.Time, prevLastMs int64) bool {
+	d := distanceKm(s.Lat, s.Lon, p.Lat, p.Lon)
+	if d < 300 {
+		return false
+	}
+	dt := now.Sub(time.UnixMilli(prevLastMs)).Hours()
+	if dt < 1.0/60 {
+		dt = 1.0 / 60
+	}
+	return d/dt > 1000
+}
+
+// dropTrackSpikes は保存済みの軌跡から、前後の点と比べて一瞬だけ遠くへ飛んだ点 (化けたパケット由来) を取り除く。
+func dropTrackSpikes(tr []TrackPoint, path []string) ([]TrackPoint, []string) {
+	if len(tr) < 3 {
+		return tr, path
+	}
+	off := len(tr) - len(path) // 旧データでは path が短い (末尾に揃える)
+	outT := make([]TrackPoint, 0, len(tr))
+	outP := make([]string, 0, len(path))
+	for i, pt := range tr {
+		if i > 0 && i < len(tr)-1 {
+			prev, next := tr[i-1], tr[i+1]
+			if distanceKm(prev[0], prev[1], pt[0], pt[1]) >= 300 &&
+				distanceKm(pt[0], pt[1], next[0], next[1]) >= 300 &&
+				distanceKm(prev[0], prev[1], next[0], next[1]) < 300 {
+				continue
+			}
+		}
+		outT = append(outT, pt)
+		if j := i - off; j >= 0 && j < len(path) {
+			outP = append(outP, path[j])
+		}
+	}
+	return outT, outP
 }
