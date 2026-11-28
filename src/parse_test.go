@@ -200,3 +200,16 @@ func TestBeaconPHGSeparator(t *testing.T) {
 		t.Errorf("PHGなし %q", b)
 	}
 }
+
+func TestMicERejectsGarbledBytes(t *testing.T) {
+	// 実際に JA0QEV-9 で受信した化けパケット (経度が 136E -> 104E、0x80 を含む)
+	raw := "JA0QEV-9>SVPQV3,WIDE1-1,WIDE2-1,qAR,JR0CST-10:`p`-\x80R\x1c>/]\"3r}="
+	p, err := ParseTNC2(raw)
+	if err == nil && p.HasPos {
+		t.Fatalf("garbled Mic-E accepted: %v,%v", p.Lat, p.Lon)
+	}
+	good, err := ParseTNC2("JA0QEV-9>SVPQV3,WIDE1-1,WIDE2-1,qAR,JR0CST-10:`B] l]j>/]\"3r}=")
+	if err != nil || !good.HasPos || good.Lon < 130 || good.Lon > 140 {
+		t.Fatalf("good packet: %v %+v", err, good)
+	}
+}
