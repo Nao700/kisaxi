@@ -98,6 +98,12 @@ type Config struct {
 	WXISMin      int     `json:"wxIsMin"`
 	WXRF         bool    `json:"wxRf"`
 	WXRFMin      int     `json:"wxRfMin"`
+	// CWOP (Citizen Weather Observer Program) への気象データ送信
+	WXCWOP       bool   `json:"wxCwop"`
+	WXCWOPMin    int    `json:"wxCwopMin"`    // 送信間隔 (分、5 以上)
+	WXCWOPID     string `json:"wxCwopId"`     // CWOP の ID (空欄なら気象局のコールサイン-SSID)
+	WXCWOPPass   string `json:"wxCwopPass"`   // 空欄なら CW1234 形式の ID は -1、アマチュア局のコールは自局のパスコード
+	WXCWOPServer string `json:"wxCwopServer"` // 空欄で cwop.aprs.net:14580
 
 	Objects []ObjectDef `json:"objects"`
 }
@@ -148,6 +154,7 @@ func defaultConfig() Config {
 		WXISMin:          5,
 		WXRF:             false,
 		WXRFMin:          30,
+		WXCWOPMin:        cwopDefaultMin,
 		StationExpireMin: 60,
 		TrackPoints:      300,
 		TrackSplit:       "day",
@@ -246,6 +253,15 @@ func (c *Config) Normalize() {
 	if c.WXISMin < 5 {
 		c.WXISMin = 5
 	}
+	if c.WXCWOPMin == 0 {
+		c.WXCWOPMin = cwopDefaultMin
+	}
+	if c.WXCWOPMin < cwopMinMin {
+		c.WXCWOPMin = cwopMinMin
+	}
+	c.WXCWOPID = strings.ToUpper(strings.TrimSpace(c.WXCWOPID))
+	c.WXCWOPPass = strings.TrimSpace(c.WXCWOPPass)
+	c.WXCWOPServer = strings.TrimSpace(c.WXCWOPServer)
 	if c.WXRFMin < 5 {
 		c.WXRFMin = 5
 	}
@@ -287,6 +303,11 @@ func (c *Config) Validate() error {
 		}
 		if c.Callsign != "" && sameCall(c.WXCall, c.Callsign) {
 			return errors.New("気象局のコールサインは自局とは別の SSID にしてください (例: JA1XXX-13)")
+		}
+	}
+	if c.WXCWOPID != "" {
+		if _, err := encodeAddr(c.WXCWOPID, false, false); err != nil {
+			return errors.New("CWOP の ID が正しくありません (例: CW1234 または JA1XXX-13)")
 		}
 	}
 	for _, p := range []string{c.IStoRFPath, c.BeaconRFPath} {

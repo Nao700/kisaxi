@@ -395,6 +395,16 @@
             <label class="chk"><input type="checkbox" name="wxRf"> RF にも送信</label>
             <label>間隔 (分) <input name="wxRfMin" type="number" min="5"></label>
           </div>
+          <div class="row">
+            <label class="chk"><input type="checkbox" name="wxCwop"> CWOP に送信</label>
+            <label>間隔 (分) <input name="wxCwopMin" type="number" min="5"></label>
+          </div>
+          <div class="row">
+            <label>CWOP の ID <input name="wxCwopId" maxlength="9" placeholder="空欄で気象局のコールサイン-SSID"></label>
+            <label>パスコード <input name="wxCwopPass" placeholder="空欄で自動"></label>
+          </div>
+          <label>CWOP サーバー <input name="wxCwopServer" placeholder="cwop.aprs.net:14580"></label>
+          <p class="hint">CWOP (Citizen Weather Observer Program) へ気象データを送ります。ID は CWOP に登録した CW1234 形式の番号、またはアマチュア局のコールサイン-SSID (例 JA1XXX-13) です。パスコードは、CW1234 形式の ID なら不要、コールサインなら APRS-IS のパスコード (空欄なら自局のパスコード) を使います。送信間隔は 5 分以上です (10 分程度を推奨)。</p>
           <p class="hint">コンソールにつないだデータロガーから約 2 秒ごとに現在値を読み取り、自局とは別の SSID の気象局として位置付きの APRS WX パケットを送ります (RF の送信パスはビーコンと同じ)。TNC 用とは別のシリアルポートを指定してください。WeatherLink など他のソフトが同じロガーを使っていると読み取れません。気圧はコンソールが標高補正した海面気圧を、雨量は 0.01 インチ単位の雨量計の値を使います。1 時間・24 時間雨量と突風 (過去 5 分間の最大風速) は読み取った値から積算するため、起動直後は実際より少なくなります。</p>
         </fieldset>
 
