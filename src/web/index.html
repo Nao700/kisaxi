@@ -296,6 +296,7 @@
           </div>
           <label>IS→RF 送信パス <input name="isToRfPath" placeholder="WIDE1-1 (空欄で直接)"></label>
           <label>送出する局 (コールサイン名指し) <input name="isToRfCalls" placeholder="例: JA1ABC, JA2XYZ-9, JA3*"></label>
+          <p class="hint">JA1ABC は SSID なしの局のみ (JA1ABC-2 などは送出しません)。JA1ABC-* は全 SSID、JA1ABC-9 はその SSID のみ、JA3* は前方一致。</p>
           <label>送出するポジションコメント (Mic-E の状態) <select name="isToRfMicE">
             <option value="">指定なし</option>
             <option value="Off Duty">Off Duty (勤務外)</option>

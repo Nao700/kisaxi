@@ -4,6 +4,7 @@ package main
 
 import (
 	"log"
+	"strings"
 	"time"
 )
 
@@ -12,11 +13,42 @@ import (
 // 何も設定されていなければ false (位置情報は送出しない)。
 // 位置を持たないパケットはコメントには合わない。
 func isRFSelected(p *Packet, cfg Config) bool {
-	if cfg.IStoRFCalls != "" && noRF(cfg.IStoRFCalls, p.Src) {
+	if cfg.IStoRFCalls != "" && isRFCallListed(cfg.IStoRFCalls, p.Src) {
 		return true
 	}
 	if cfg.IStoRFMicE != "" && p.HasPos && p.MicEMsg == cfg.IStoRFMicE {
 		return true
+	}
+	return false
+}
+
+// isRFCallListed は call が IS→RF の「送出する局」リストに該当するかを返す。
+// 除外局 (noRF) と違い、SSID なしの指定はその SSID なし (-0) の局だけに合う。
+// JA1ABC-2 のような別 SSID の局まで漏れて送出されるのを防ぐため。
+// 全 SSID を対象にするときは JA1ABC-* と書く。JA1ABC-9 は完全一致、JA1* は前方一致。
+func isRFCallListed(list, call string) bool {
+	call = strings.TrimSuffix(strings.ToUpper(strings.TrimSpace(call)), "-0")
+	if list == "" || call == "" {
+		return false
+	}
+	for _, e := range strings.Split(list, ",") {
+		e = strings.TrimSuffix(strings.TrimSpace(e), "-0")
+		switch {
+		case e == "":
+		case strings.HasSuffix(e, "-*"):
+			base := strings.TrimSuffix(e, "-*")
+			if call == base || strings.HasPrefix(call, base+"-") {
+				return true
+			}
+		case strings.HasSuffix(e, "*"):
+			if strings.HasPrefix(call, strings.TrimSuffix(e, "*")) {
+				return true
+			}
+		default:
+			if call == e {
+				return true
+			}
+		}
 	}
 	return false
 }
