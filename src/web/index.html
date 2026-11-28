@@ -284,6 +284,17 @@
           </div>
           <label class="tnc-tcp">アドレス:ポート <input name="kissTcpAddr" placeholder="127.0.0.1:8001"></label>
           <label>TXDELAY (ms, 0=TNC の設定のまま) <input name="txDelayMs" type="number" min="0" max="2550" step="10"></label>
+          <label>Persist (0〜255, 空欄=TNC の設定のまま) <input name="kissPersist" type="number" min="0" max="255" step="1" placeholder="例: 63"></label>
+          <label>SlotTime (ms, 空欄=TNC の設定のまま) <input name="kissSlotMs" type="number" min="0" max="2550" step="10" placeholder="例: 100"></label>
+          <label>TXTail (ms, 空欄=TNC の設定のまま) <input name="kissTxTailMs" type="number" min="0" max="2550" step="10" placeholder="例: 10"></label>
+          <label>Full Duplex
+            <select name="kissFullDup">
+              <option value="">TNC の設定のまま</option>
+              <option value="0">半二重 (OFF)</option>
+              <option value="1">全二重 (ON)</option>
+            </select>
+          </label>
+          <div class="hint">TXDELAY / Persist / SlotTime / TXTail / Full Duplex は、TNC に接続するたびに KISS コマンドで送ります。</div>
         </fieldset>
 
         <fieldset>

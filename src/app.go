@@ -173,6 +173,7 @@ func connChanged(o, n Config) bool {
 		o.ISEnabled != n.ISEnabled || o.ISServer != n.ISServer || o.ISServer2 != n.ISServer2 || o.ISServer3 != n.ISServer3 || o.ISFilter != n.ISFilter ||
 		o.TNCType != n.TNCType || o.SerialPort != n.SerialPort || o.Baud != n.Baud ||
 		o.KissTCPAddr != n.KissTCPAddr || o.BTAddr != n.BTAddr || o.BTBridgeAddr != n.BTBridgeAddr || o.TNCInit != n.TNCInit || o.TxDelayMs != n.TxDelayMs ||
+		o.KissPersist != n.KissPersist || o.KissSlotMs != n.KissSlotMs || o.KissTxTailMs != n.KissTxTailMs || o.KissFullDup != n.KissFullDup ||
 		o.WXEnabled != n.WXEnabled || o.WXSource != n.WXSource || o.WXSerialPort != n.WXSerialPort ||
 		o.WXBaud != n.WXBaud || o.WXTCPAddr != n.WXTCPAddr ||
 		o.WXSDRDevice != n.WXSDRDevice || o.WXSDRGain != n.WXSDRGain || o.WXSDRPPM != n.WXSDRPPM || o.WXSDRID != n.WXSDRID || o.WXRainMm != n.WXRainMm

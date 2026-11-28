@@ -4,7 +4,7 @@ package main
 
 const (
 	softwareName    = "KISAXI"
-	softwareVersion = "1.0.1"
+	softwareVersion = "1.1.0"
 	developedBy     = "Developed by JR2TTA Nao feat.Claude"
 )
 
@@ -15,6 +15,13 @@ type ChangeEntry struct {
 }
 
 var changelog = []ChangeEntry{
+	{
+		Version: "1.1.0",
+		Date:    "2026-11-28",
+		Changes: []string{
+			"TNC 設定に KISS パラメーター (Persist / SlotTime / TXTail / Full Duplex) を追加。TXDELAY と同様に接続のたびに TNC へ送信 (空欄なら TNC の設定のまま)",
+		},
+	},
 	{
 		Version: "1.0.1",
 		Date:    "2026-11-24",

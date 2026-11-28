@@ -39,6 +39,11 @@ type Config struct {
 	BTBridgeAddr string `json:"btBridgeAddr"` // kiss-bt: ブリッジの HTTP アドレス (空=127.0.0.1:8074)
 	TNCInit      string `json:"tncInit"`      // KISS モード移行前に送るコマンド (改行区切り)
 	TxDelayMs    int    `json:"txDelayMs"`
+	// 以下の KISS パラメーターは -1 で「TNC の設定のまま (送らない)」
+	KissPersist  int `json:"kissPersist"`  // 0-255 (P)
+	KissSlotMs   int `json:"kissSlotMs"`   // SlotTime (ms, 10ms 単位)
+	KissTxTailMs int `json:"kissTxTailMs"` // TXTail (ms, 10ms 単位)
+	KissFullDup  int `json:"kissFullDup"`  // 0=半二重, 1=全二重
 
 	RFtoIS          bool   `json:"rfToIs"`
 	IStoRF          bool   `json:"isToRf"`
@@ -123,6 +128,10 @@ func defaultConfig() Config {
 		TNCType:          "none",
 		Baud:             9600,
 		KissTCPAddr:      "127.0.0.1:8001",
+		KissPersist:      -1,
+		KissSlotMs:       -1,
+		KissTxTailMs:     -1,
+		KissFullDup:      -1,
 		RFtoIS:           true,
 		IStoRF:           true,
 		LocalHeardMin:    30,
@@ -318,6 +327,18 @@ func (c *Config) Validate() error {
 		if err := checkAlias(al); err != nil {
 			return err
 		}
+	}
+	if c.KissPersist < -1 || c.KissPersist > 255 {
+		return errors.New("Persist は 0〜255 で指定してください")
+	}
+	if c.KissSlotMs < -1 || c.KissSlotMs > 2550 {
+		return errors.New("SlotTime は 0〜2550 ms で指定してください")
+	}
+	if c.KissTxTailMs < -1 || c.KissTxTailMs > 2550 {
+		return errors.New("TXTail は 0〜2550 ms で指定してください")
+	}
+	if c.KissFullDup < -1 || c.KissFullDup > 1 {
+		return errors.New("Full Duplex の指定が正しくありません")
 	}
 	switch c.TNCType {
 	case "none", "kiss-serial", "kiss-tcp", "kiss-bt":

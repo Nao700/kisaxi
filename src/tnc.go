@@ -158,6 +158,33 @@ func (t *TNC) session(ctx context.Context) error {
 		}
 		rw.Write(kissEncode(0x01, []byte{byte(v)}))
 	}
+	// KISS パラメーター (負なら TNC の設定のまま)
+	ms10 := func(ms int) byte {
+		v := ms / 10
+		if v > 255 {
+			v = 255
+		}
+		return byte(v)
+	}
+	if v := t.cfg.KissPersist; v >= 0 {
+		if v > 255 {
+			v = 255
+		}
+		rw.Write(kissEncode(0x02, []byte{byte(v)}))
+	}
+	if t.cfg.KissSlotMs >= 0 {
+		rw.Write(kissEncode(0x03, []byte{ms10(t.cfg.KissSlotMs)}))
+	}
+	if t.cfg.KissTxTailMs >= 0 {
+		rw.Write(kissEncode(0x04, []byte{ms10(t.cfg.KissTxTailMs)}))
+	}
+	if t.cfg.KissFullDup >= 0 {
+		v := byte(0)
+		if t.cfg.KissFullDup > 0 {
+			v = 1
+		}
+		rw.Write(kissEncode(0x05, []byte{v}))
+	}
 
 	log.Printf("TNC: %s に接続しました", t.st.Desc)
 	t.setStatus(true, rw, "")

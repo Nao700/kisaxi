@@ -786,12 +786,14 @@ async function loadAbout() {
 }
 
 // ---------- 設定 ----------
+const optNumFields = ['kissPersist', 'kissSlotMs', 'kissTxTailMs', 'kissFullDup']; // 空欄 = -1 (TNC の設定のまま)
 const numFields = ['lat', 'lon', 'phgPower', 'phgHeight', 'phgGain', 'phgDir', 'baud', 'txDelayMs', 'localHeardMin', 'maxIsToRfPerMin', 'digiAliasPerMin', 'beaconRfMin', 'beaconIsMin', 'stationExpireMin', 'trackPoints', 'trackGapMin', 'wxBaud', 'wxIsMin', 'wxRfMin', 'wxSdrDevice', 'wxSdrGain', 'wxSdrPpm', 'wxSdrId', 'wxRainMm'];
 function fillForm() {
   const f = $('#cfg-form');
   for (const el of f.elements) {
     if (!el.name || !(el.name in cfg)) continue;
     if (el.type === 'checkbox') el.checked = !!cfg[el.name];
+    else if (optNumFields.includes(el.name)) el.value = cfg[el.name] >= 0 ? cfg[el.name] : '';
     else el.value = cfg[el.name];
   }
   updateTncFields();
@@ -806,6 +808,7 @@ function readForm() {
   for (const el of f.elements) {
     if (!el.name) continue;
     if (el.type === 'checkbox') out[el.name] = el.checked;
+    else if (optNumFields.includes(el.name)) out[el.name] = el.value === '' ? -1 : Number(el.value);
     else if (numFields.includes(el.name)) out[el.name] = Number(el.value) || 0;
     else out[el.name] = el.value;
   }
