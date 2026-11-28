@@ -392,13 +392,15 @@ function setPickMode(on) {
 
 // ---------- 局リスト ----------
 let listDirty = true;
+// 直近 1 時間以内に RF で受信していれば RF、それ以外 (RF で受けた後、離れて IS だけになった局を含む) は IS
+const rfRecent = s => !!s.lastRf && Date.now() - s.lastRf < 3600e3;
 function matchFilter(s) {
   if (!pktStationOk(s)) return false;
   const q = $('#st-filter').value.trim().toUpperCase();
   const via = $('#st-via').value;
   if (q && !s.call.toUpperCase().includes(q)) return false;
-  if (via === 'RF' && !s.lastRf && s.via !== 'LOCAL') return false;
-  if (via === 'IS' && s.lastRf) return false;
+  if (via === 'RF' && !rfRecent(s) && s.via !== 'LOCAL') return false;
+  if (via === 'IS' && rfRecent(s)) return false;
   return true;
 }
 function renderList() {
@@ -412,7 +414,7 @@ function renderList() {
     n++;
     if (rows.length >= 500) continue;
     const d = s.hasPos && (cfg.lat || cfg.lon) ? distKm(cfg.lat, cfg.lon, s.lat, s.lon).toFixed(1) : '';
-    const via = s.via === 'LOCAL' ? 'LOCAL' : s.lastRf ? 'RF' : 'IS';
+    const via = s.via === 'LOCAL' ? 'LOCAL' : rfRecent(s) ? 'RF' : 'IS';
     rows.push(`<tr data-call="${esc(s.call)}"><td>${s.sym ? symHTML(s.sym) : ''}</td><td>${esc(s.call)}</td><td class="via-${via}">${via}</td><td class="num">${d}</td><td class="num">${ago(s.last)}</td></tr>`);
   }
   $('#st-table tbody').innerHTML = rows.join('');
