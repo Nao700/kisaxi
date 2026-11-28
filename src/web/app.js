@@ -512,9 +512,10 @@ function showGateRoute(p) {
   const sll = src && stationLL(src);
   if (!sll) return;
   lastRoutes.set(src, { calls: [src, ...via, ''], color: isRF ? '#e8750a' : '#0aa5a5' });
-  if (!$('#opt-gateroute').checked) return;
+  // 自動で出す線は自局が RF で受信したもの (RF→IS) だけ。IS→RF など他の経路はカーソルを合わせたときだけ表示する
+  if (isRF || !$('#opt-gateroute').checked) return;
   const line = [sll, ...pts, me];
-  const color = isRF ? '#e8750a' : '#0aa5a5';
+  const color = '#0aa5a5';
   while (routeLayer.getLayers().length >= ROUTE_MAX) routeLayer.removeLayer(routeLayer.getLayers()[0]);
   const pl = L.polyline(line, { color, weight: 3, opacity: 0.9, className: 'gate-route', interactive: false });
   const dot = L.circleMarker(sll, { radius: 6, color, weight: 2, fillOpacity: 0, className: 'gate-route-dot', interactive: false });
