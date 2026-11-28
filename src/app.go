@@ -258,11 +258,11 @@ func (a *App) handleRF(line string) {
 		return // 自局の送信がデジピートされて戻ってきたもの
 	}
 	if p.Type == "thirdparty" && len(p.Info) > 1 {
-		if ip, err := ParseTNC2(p.Info[1:]); err == nil && noRF(cfg.NoRFCalls, ip.Src) {
+		if ip, err := ParseTNC2(p.Info[1:]); err == nil && ignoredPacket(cfg, ip) {
 			return
 		}
 	}
-	if noRF(cfg.NoRFCalls, p.Src) {
+	if ignoredPacket(cfg, p) {
 		return // 除外局: 受信を完全に無視する
 	}
 	a.hmu.Lock()
@@ -302,7 +302,7 @@ func (a *App) onISLine(line string) {
 			p = ip
 		}
 	}
-	if isOwnCall(p.Src, cfg) || noRF(cfg.NoRFCalls, p.Src) {
+	if isOwnCall(p.Src, cfg) || ignoredPacket(cfg, p) {
 		return // 除外局: 受信を完全に無視する
 	}
 	a.updateStation(p, "IS")

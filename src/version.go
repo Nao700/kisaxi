@@ -21,6 +21,9 @@ var changelog = []ChangeEntry{
 		Changes: []string{
 			"APRS-IS → RF の「送出する局」で、JA1ABC のように SSID なしで指定した局の別 SSID (JA1ABC-2 など) まで RF へ漏れて送出される不具合を修正 (全 SSID を対象にするときは JA1ABC-* と指定)",
 			"TNC 設定に KISS パラメーター (Persist / SlotTime / TXTail / Full Duplex) を追加。TXDELAY と同様に接続のたびに TNC へ送信 (空欄なら TNC の設定のまま)",
+			"ゲートしたパケットの経路を地図上に線でリアルタイム表示 (局・軌跡にカーソルを合わせるとその経路を表示。地図上部のチェックボックスでオン/オフ)",
+			"気象局の設定から CWOP へ気象データを送信できるように (間隔・ID・パスコード・サーバーを設定)",
+			"DPRS (D-STAR) 経由の局の受信を除外する設定を追加 (宛先 APDPRS・APDG??・API??? などで判定し、シンボルのオーバーレイ D だけでは除外しない)",
 		},
 	},
 	{
