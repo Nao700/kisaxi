@@ -380,6 +380,12 @@ func parseMicE(p *Packet) bool {
 	if len(dst) != 6 || len(info) < 9 {
 		return false
 	}
+	// 経度・速度・進路の各バイトは 28〜127 のはず。範囲外 (0x80 以上など) は受信時に化けたパケットなので捨てる
+	for i := 1; i <= 6; i++ {
+		if info[i] < 28 || info[i] > 127 {
+			return false
+		}
+	}
 	var digits [6]int
 	msgBits, custom := 0, false
 	for i := 0; i < 6; i++ {
