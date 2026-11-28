@@ -26,6 +26,7 @@ import (
 )
 
 const (
+	afterStopWait   = 3 * time.Second // 接続を閉じてから新しいプロセスを起動するまでの待ち
 	updateRepo      = "Nao700/kisaxi"
 	updateInterval  = 24 * time.Hour   // 自動確認の間隔
 	updateFirstWait = 30 * time.Second // 起動 (または有効化) から最初の確認までの待ち
@@ -324,6 +325,12 @@ func (a *App) ApplyUpdate(ctx context.Context) error {
 		time.Sleep(time.Second) // 画面に結果を返してから
 		a.SaveData()
 		a.SaveWX()
+		// 新しいプロセスが TNC のポートを開く前に、こちらで閉じ終えておく。
+		// Bluetooth の rfcomm はカーネル側の切断が遅れるため、少し待ってから起動する。
+		a.startMu.Lock()
+		a.stopConnections()
+		a.startMu.Unlock()
+		time.Sleep(afterStopWait)
 		restartSelf(exe)
 	}()
 	return nil

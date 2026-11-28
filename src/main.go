@@ -71,6 +71,11 @@ func main() {
 		log.Fatalf("Web UI を %s で開始できません: %v", cfg.HTTPListen, err)
 	}
 
+	if *afterUpdate {
+		// Bluetooth (rfcomm) の切断がカーネル側で終わるのを待ってから TNC のポートを開く
+		time.Sleep(2 * time.Second)
+	}
+
 	app := NewApp(cfg, path, logDir)
 	app.LoadData()
 	app.LoadWX()
