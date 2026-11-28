@@ -17,9 +17,10 @@ type ChangeEntry struct {
 var changelog = []ChangeEntry{
 	{
 		Version: "1.1.0",
-		Date:    "2026-11-27",
+		Date:    "2026-11-28",
 		Changes: []string{
 			"APRS-IS → RF の「送出する局」で、JA1ABC のように SSID なしで指定した局の別 SSID (JA1ABC-2 など) まで RF へ漏れて送出される不具合を修正 (全 SSID を対象にするときは JA1ABC-* と指定)",
+			"TNC 設定に KISS パラメーター (Persist / SlotTime / TXTail / Full Duplex) を追加。TXDELAY と同様に接続のたびに TNC へ送信 (空欄なら TNC の設定のまま)",
 		},
 	},
 	{
