@@ -264,6 +264,7 @@ map.on('zoomstart', spiderCollapse);
 document.addEventListener('keydown', ev => { if (ev.key === 'Escape') spiderCollapse(); });
 
 function stationVisible(s) {
+  if (!pktStationOk(s)) return false;
   if (!$('#opt-mapfilter').checked) return true;
   return matchFilter(s);
 }
@@ -392,6 +393,7 @@ function setPickMode(on) {
 // ---------- 局リスト ----------
 let listDirty = true;
 function matchFilter(s) {
+  if (!pktStationOk(s)) return false;
   const q = $('#st-filter').value.trim().toUpperCase();
   const via = $('#st-via').value;
   if (q && !s.call.toUpperCase().includes(q)) return false;
@@ -543,6 +545,36 @@ function pktRow(p) {
   div.innerHTML = `<span class="t">${hhmmss(p.t)}</span><span class="d">${esc(p.dir)}</span> ${esc(p.raw)}`;
   return div;
 }
+// パケット欄の検索語に一致するパケットを出した局だけ、地図と局一覧に出す (「局も絞る」にチェックがあるとき)
+const pktHitCalls = new Set();
+let pktStationOn = false;
+function pktSrc(p) {
+  const m = /^([^>\s]+)>/.exec(p.raw);
+  return m ? m[1] : '';
+}
+function pktStationOk(s) {
+  return !pktStationOn || pktHitCalls.has(s.call);
+}
+let pktRedrawTimer = 0;
+function pktRedrawStations() {
+  clearTimeout(pktRedrawTimer);
+  pktRedrawTimer = setTimeout(() => {
+    for (const k of stations.keys()) drawStation(k);
+    listDirty = true;
+    renderList();
+  }, 150);
+}
+function pktUpdateStationFilter(words) {
+  const on = $('#pkt-stfilter').checked && words.length > 0;
+  pktHitCalls.clear();
+  if (on) {
+    const { cats } = pktFilterState();
+    for (const p of pktBuf) if (pktMatch(p, cats, words)) { const c = pktSrc(p); if (c) pktHitCalls.add(c); }
+  }
+  if (on === pktStationOn && !on) return;
+  pktStationOn = on;
+  pktRedrawStations();
+}
 function pktCount(words, shown) {
   $('#pkt-count').textContent = words.length ? `${shown} / ${pktBuf.length} 件` : '';
 }
@@ -554,6 +586,7 @@ function renderPackets() {
   pktLog.appendChild(frag);
   pktLog.scrollTop = pktLog.scrollHeight;
   pktCount(words, pktLog.childElementCount);
+  pktUpdateStationFilter(words);
 }
 function addPacket(p) {
   if ($('#pkt-pause').checked) return;
@@ -562,6 +595,10 @@ function addPacket(p) {
   const { cats, words } = pktFilterState();
   if (!pktMatch(p, cats, words)) { pktCount(words, pktLog.childElementCount); return; }
   const atBottom = pktLog.scrollHeight - pktLog.scrollTop - pktLog.clientHeight < 30;
+  if (pktStationOn) {
+    const c = pktSrc(p);
+    if (c && !pktHitCalls.has(c)) { pktHitCalls.add(c); drawStation(c); listDirty = true; }
+  }
   pktLog.appendChild(pktRow(p));
   while (pktLog.childElementCount > PKT_MAX) pktLog.firstElementChild.remove();
   if (atBottom) pktLog.scrollTop = pktLog.scrollHeight;
@@ -569,6 +606,7 @@ function addPacket(p) {
 }
 $('#pkt-clear').addEventListener('click', () => { pktBuf.length = 0; renderPackets(); });
 $('#pkt-grep').addEventListener('input', renderPackets);
+$('#pkt-stfilter').addEventListener('change', renderPackets);
 $$('.pf').forEach(c => c.addEventListener('change', renderPackets));
 
 // ---------- メッセージ ----------
