@@ -48,6 +48,8 @@ type Config struct {
 
 	NoRFCalls string `json:"noRfCalls"` // 除外局: 受信を無視し、RF へも送らない (カンマ区切り。JA1ABC は全 SSID、JA1ABC-9 は完全一致、JA1* は前方一致)
 
+	NoDPRS bool `json:"noDprs"` // DPRS (D-STAR) 由来の局の受信も除外局と同じく完全に無視する
+
 	DigiEnabled bool `json:"digiEnabled"` // デジピータ (WIDE1-1・自局コール宛を中継)
 	DigiWide    bool `json:"digiWide"`    // WIDE2-n も中継する
 

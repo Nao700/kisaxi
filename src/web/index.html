@@ -308,6 +308,8 @@
             <option value="Emergency">Emergency (緊急)</option>
           </select></label>
           <p class="hint">APRS-IS で受けた位置情報を、RF へサードパーティ形式で送出する条件です。局指定・ポジションコメントのうち、設定したもののどちらかに合う局だけを送出します。すべて空欄なら位置情報は送出しません (従来のローカル局宛メッセージのゲートだけ動きます)。すでに RF で聞こえている局は送りません。ポジションコメントは Mic-E の状態 (In Service・En Route など) で、選んだ状態の局だけに合います。「IS→RF 最大 (件/分)」の上限と送信パスを共用します。</p>
+          <label class="chk"><input type="checkbox" name="noDprs"> DPRS (D-STAR) 経由の局の受信を除外する</label>
+          <p class="hint">宛先 (APDPRS・APDG??・API???・APD5T? など D-STAR 機器・ゲートウェイのもの) で判定します。シンボルの「D」だけでは判定しないので、D-STAR 以外の局は除外されません。除外した局は下の「除外局」と同じく、一覧・地図・メッセージ・DX・IS への転送・デジピートの対象外になります。</p>
           <label>除外局 (完全無視) <input name="noRfCalls" placeholder="例: JA1ABC, JA2XYZ-9, JA3*"></label>
           <p class="hint">ここに書いた局は完全に無視します。RF・APRS-IS どちらの受信もなかったことにし (一覧・地図・メッセージ・DX・IS への転送・デジピートの対象外)、その局宛のメッセージも送りません。カンマ区切り。JA1ABC は全 SSID、JA1ABC-9 はその SSID のみ、JA3* は前方一致。</p>
         </fieldset>

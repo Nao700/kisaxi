@@ -4,7 +4,7 @@ package main
 
 const (
 	softwareName    = "KISAXI"
-	softwareVersion = "1.0.1"
+	softwareVersion = "1.1.0"
 	developedBy     = "Developed by JR2TTA Nao feat.Claude"
 )
 
@@ -15,6 +15,13 @@ type ChangeEntry struct {
 }
 
 var changelog = []ChangeEntry{
+	{
+		Version: "1.1.0",
+		Date:    "2026-11-28",
+		Changes: []string{
+			"DPRS (D-STAR) 経由の局の受信を除外する設定を追加 (宛先 APDPRS・APDG??・API??? などで判定し、シンボルのオーバーレイ D だけでは除外しない)",
+		},
+	},
 	{
 		Version: "1.0.1",
 		Date:    "2026-11-24",
