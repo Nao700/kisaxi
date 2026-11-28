@@ -4,7 +4,7 @@ package main
 
 const (
 	softwareName    = "KISAXI"
-	softwareVersion = "1.1.1"
+	softwareVersion = "1.1.2"
 	developedBy     = "Developed by JR2TTA Nao feat.Claude"
 )
 
@@ -15,6 +15,13 @@ type ChangeEntry struct {
 }
 
 var changelog = []ChangeEntry{
+	{
+		Version: "1.1.2",
+		Date:    "2026-11-28",
+		Changes: []string{
+			"局リストの「経由」が、最初に RF で受信した局が離れて IS だけになっても RF のまま変わらない問題を修正 (最後に RF で受信してから 1 時間たつと IS 表示に切り替わる。地図のアイコンと同じ基準。RF/IS の絞り込みも同様)",
+		},
+	},
 	{
 		Version: "1.1.1",
 		Date:    "2026-11-28",
