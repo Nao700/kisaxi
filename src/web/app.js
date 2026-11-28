@@ -264,6 +264,7 @@ map.on('zoomstart', spiderCollapse);
 document.addEventListener('keydown', ev => { if (ev.key === 'Escape') spiderCollapse(); });
 
 function stationVisible(s) {
+  if (!pktStationOk(s)) return false;
   if (!$('#opt-mapfilter').checked) return true;
   return matchFilter(s);
 }
@@ -392,6 +393,7 @@ function setPickMode(on) {
 // ---------- 局リスト ----------
 let listDirty = true;
 function matchFilter(s) {
+  if (!pktStationOk(s)) return false;
   const q = $('#st-filter').value.trim().toUpperCase();
   const via = $('#st-via').value;
   if (q && !s.call.toUpperCase().includes(q)) return false;
@@ -512,9 +514,10 @@ function showGateRoute(p) {
   const sll = src && stationLL(src);
   if (!sll) return;
   lastRoutes.set(src, { calls: [src, ...via, ''], color: isRF ? '#e8750a' : '#0aa5a5' });
-  if (!$('#opt-gateroute').checked) return;
+  // 自動で出す線は自局が RF で受信したもの (RF→IS) だけ。IS→RF など他の経路はカーソルを合わせたときだけ表示する
+  if (isRF || !$('#opt-gateroute').checked) return;
   const line = [sll, ...pts, me];
-  const color = isRF ? '#e8750a' : '#0aa5a5';
+  const color = '#0aa5a5';
   while (routeLayer.getLayers().length >= ROUTE_MAX) routeLayer.removeLayer(routeLayer.getLayers()[0]);
   const pl = L.polyline(line, { color, weight: 3, opacity: 0.9, className: 'gate-route', interactive: false });
   const dot = L.circleMarker(sll, { radius: 6, color, weight: 2, fillOpacity: 0, className: 'gate-route-dot', interactive: false });
@@ -523,21 +526,89 @@ function showGateRoute(p) {
 }
 $('#opt-gateroute').addEventListener('change', () => { if (!$('#opt-gateroute').checked) { routeLayer.clearLayers(); hoverRouteLayer.clearLayers(); } });
 
-function addPacket(p) {
-  if ($('#pkt-pause').checked) return;
+// パケット欄は表示用のバッファを持ち、フィルタ (種別・検索語) を変えたら溜めた分も絞り直す。
+const PKT_MAX = 3000;
+const pktBuf = [];
+function pktMatch(p, cats, words) {
+  if (!cats.has(pktCategory(p.dir))) return false;
+  if (!words.length) return true;
+  const hay = (p.dir + ' ' + p.raw).toUpperCase();
+  return words.every(w => hay.includes(w)); // 空白区切りは AND
+}
+function pktFilterState() {
   const cats = new Set($$('.pf').filter(c => c.checked).map(c => c.value));
-  if (!cats.has(pktCategory(p.dir))) return;
-  const g = $('#pkt-grep').value.trim().toUpperCase();
-  if (g && !p.raw.toUpperCase().includes(g)) return;
-  const atBottom = pktLog.scrollHeight - pktLog.scrollTop - pktLog.clientHeight < 30;
+  const words = $('#pkt-grep').value.trim().toUpperCase().split(/\s+/).filter(Boolean);
+  return { cats, words };
+}
+function pktRow(p) {
   const div = document.createElement('div');
   div.className = 'dir-' + p.dir;
   div.innerHTML = `<span class="t">${hhmmss(p.t)}</span><span class="d">${esc(p.dir)}</span> ${esc(p.raw)}`;
-  pktLog.appendChild(div);
-  while (pktLog.childElementCount > 3000) pktLog.firstElementChild.remove();
-  if (atBottom) pktLog.scrollTop = pktLog.scrollHeight;
+  return div;
 }
-$('#pkt-clear').addEventListener('click', () => (pktLog.innerHTML = ''));
+// パケット欄の検索語に一致するパケットを出した局だけ、地図と局一覧に出す (「局も絞る」にチェックがあるとき)
+const pktHitCalls = new Set();
+let pktStationOn = false;
+function pktSrc(p) {
+  const m = /^([^>\s]+)>/.exec(p.raw);
+  return m ? m[1] : '';
+}
+function pktStationOk(s) {
+  return !pktStationOn || pktHitCalls.has(s.call);
+}
+let pktRedrawTimer = 0;
+function pktRedrawStations() {
+  clearTimeout(pktRedrawTimer);
+  pktRedrawTimer = setTimeout(() => {
+    for (const k of stations.keys()) drawStation(k);
+    listDirty = true;
+    renderList();
+  }, 150);
+}
+function pktUpdateStationFilter(words) {
+  const on = $('#pkt-stfilter').checked && words.length > 0;
+  pktHitCalls.clear();
+  if (on) {
+    const { cats } = pktFilterState();
+    for (const p of pktBuf) if (pktMatch(p, cats, words)) { const c = pktSrc(p); if (c) pktHitCalls.add(c); }
+  }
+  if (on === pktStationOn && !on) return;
+  pktStationOn = on;
+  pktRedrawStations();
+}
+function pktCount(words, shown) {
+  $('#pkt-count').textContent = words.length ? `${shown} / ${pktBuf.length} 件` : '';
+}
+function renderPackets() {
+  const { cats, words } = pktFilterState();
+  const frag = document.createDocumentFragment();
+  for (const p of pktBuf) if (pktMatch(p, cats, words)) frag.appendChild(pktRow(p));
+  pktLog.innerHTML = '';
+  pktLog.appendChild(frag);
+  pktLog.scrollTop = pktLog.scrollHeight;
+  pktCount(words, pktLog.childElementCount);
+  pktUpdateStationFilter(words);
+}
+function addPacket(p) {
+  if ($('#pkt-pause').checked) return;
+  pktBuf.push(p);
+  if (pktBuf.length > PKT_MAX) pktBuf.shift();
+  const { cats, words } = pktFilterState();
+  if (!pktMatch(p, cats, words)) { pktCount(words, pktLog.childElementCount); return; }
+  const atBottom = pktLog.scrollHeight - pktLog.scrollTop - pktLog.clientHeight < 30;
+  if (pktStationOn) {
+    const c = pktSrc(p);
+    if (c && !pktHitCalls.has(c)) { pktHitCalls.add(c); drawStation(c); listDirty = true; }
+  }
+  pktLog.appendChild(pktRow(p));
+  while (pktLog.childElementCount > PKT_MAX) pktLog.firstElementChild.remove();
+  if (atBottom) pktLog.scrollTop = pktLog.scrollHeight;
+  pktCount(words, pktLog.childElementCount);
+}
+$('#pkt-clear').addEventListener('click', () => { pktBuf.length = 0; renderPackets(); });
+$('#pkt-grep').addEventListener('input', renderPackets);
+$('#pkt-stfilter').addEventListener('change', renderPackets);
+$$('.pf').forEach(c => c.addEventListener('change', renderPackets));
 
 // ---------- メッセージ ----------
 function renderMessages() {
