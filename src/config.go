@@ -53,7 +53,7 @@ type Config struct {
 
 	DigiAliases      string `json:"digiAliases"`      // UIflood のエイリアス (例: KN,NS,AC)。KNn-N を自局コールを入れず残りホップだけ減らして中継する。空欄で無効
 	DigiTraceAliases string `json:"digiTraceAliases"` // UItrace のエイリアス (例: TRACE)。TRACEn-N を自局コールを残して中継する。空欄で無効
-	IStoRFCalls      string `json:"isToRfCalls"`      // IS→RF 送出する位置情報を局で絞る (JA1ABC は全 SSID、JA1ABC-9 は完全一致、JA1* は前方一致。カンマ区切り)
+	IStoRFCalls      string `json:"isToRfCalls"`      // IS→RF 送出する位置情報を局で絞る (JA1ABC は SSID なしのみ、JA1ABC-* は全 SSID、JA1ABC-9 は完全一致、JA1* は前方一致。カンマ区切り)
 	IStoRFMicE       string `json:"isToRfMicE"`       // 送出する Mic-E の状態 (ポジションコメント。Off Duty / En Route / In Service / Returning / Committed / Special / Priority / Emergency。空欄で指定なし)
 	DigiAliasPerMin  int    `json:"digiAliasPerMin"`  // UIflood/UItrace 中継の上限 (件/分)
 

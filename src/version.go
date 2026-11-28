@@ -4,7 +4,7 @@ package main
 
 const (
 	softwareName    = "KISAXI"
-	softwareVersion = "1.0.1"
+	softwareVersion = "1.1.0"
 	developedBy     = "Developed by JR2TTA Nao feat.Claude"
 )
 
@@ -15,6 +15,13 @@ type ChangeEntry struct {
 }
 
 var changelog = []ChangeEntry{
+	{
+		Version: "1.1.0",
+		Date:    "2026-11-27",
+		Changes: []string{
+			"APRS-IS → RF の「送出する局」で、JA1ABC のように SSID なしで指定した局の別 SSID (JA1ABC-2 など) まで RF へ漏れて送出される不具合を修正 (全 SSID を対象にするときは JA1ABC-* と指定)",
+		},
+	},
 	{
 		Version: "1.0.1",
 		Date:    "2026-11-24",
