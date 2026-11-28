@@ -9,3 +9,6 @@ import (
 func detach(cmd *exec.Cmd) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{CreationFlags: 0x00000010} // CREATE_NEW_CONSOLE
 }
+
+// closeInheritedPorts は Windows では何もしない (ハンドルは引き継がれない)。
+func closeInheritedPorts() {}

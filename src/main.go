@@ -42,6 +42,9 @@ func main() {
 	noBrowser := flag.Bool("nobrowser", false, "起動時にブラウザを開かない")
 	afterUpdate := flag.Bool("after-update", false, "更新後の再起動 (内部用: 古いプロセスが終わるまで待ち受けを再試行する)")
 	flag.Parse()
+	if *afterUpdate {
+		closeInheritedPorts()
+	}
 	cleanupOldBinary()
 
 	path := *cfgFlag
