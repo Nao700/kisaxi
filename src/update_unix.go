@@ -3,7 +3,10 @@
 package main
 
 import (
+	"os"
 	"os/exec"
+	"strconv"
+	"strings"
 	"syscall"
 
 	"golang.org/x/sys/unix"
@@ -22,5 +25,20 @@ func detach(cmd *exec.Cmd) {
 func closeOnExecAll() {
 	for fd := 3; fd < 4096; fd++ {
 		unix.CloseOnExec(fd)
+	}
+}
+
+// closeInheritedPorts は、更新前の古いプロセス (close-on-exec を付けない版) から引き継いでしまった
+// シリアルポートなどのデバイス (/dev/ttyUSB0・/dev/rfcomm0 など) の fd を閉じる。
+// 起動の最初、まだ自分でファイルを開く前に呼ぶ (-after-update のとき)。
+func closeInheritedPorts() {
+	for fd := 3; fd < 1024; fd++ {
+		target, err := os.Readlink("/proc/self/fd/" + strconv.Itoa(fd))
+		if err != nil {
+			continue
+		}
+		if strings.HasPrefix(target, "/dev/") && target != "/dev/null" && target != "/dev/urandom" && target != "/dev/random" {
+			unix.Close(fd)
+		}
 	}
 }
